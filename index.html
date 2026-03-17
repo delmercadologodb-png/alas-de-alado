@@ -409,7 +409,7 @@
 <script>
 // ── CONFIG ─────────────────────────────────────────
 // IMPORTANTE: Reemplaza esta URL con la de tu Google Apps Script desplegado
-const API_URL = "https://script.google.com/macros/s/AKfycbyQreJJTEZFJdIx2kDNPxvkA6_71pP298vtZzn1BXcPI3534HpI5moaL6xmlRMlU0De/exec";
+const API_URL = "REEMPLAZA_CON_TU_URL_DE_APPS_SCRIPT";
 
 // ── HELPERS ────────────────────────────────────────
 const DAYS   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -428,12 +428,13 @@ function todayISO() { return new Date().toISOString().split('T')[0]; }
 function getInitials(n) { return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 
 async function api(action, data={}) {
-  const url = API_URL + "?action=" + action;
-  const res = await fetch(url, {
-    method: "POST",
-    body: JSON.stringify({ action, ...data }),
-    headers: { "Content-Type": "application/json" }
-  });
+  const params = new URLSearchParams({ action });
+  for (const key in data) {
+    const val = data[key];
+    params.set(key, typeof val === 'object' ? JSON.stringify(val) : val);
+  }
+  const url = API_URL + "?" + params.toString();
+  const res = await fetch(url, { redirect: "follow" });
   return res.json();
 }
 
