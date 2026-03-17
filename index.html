@@ -551,19 +551,25 @@ function logout() {
 
 // ── HOME ───────────────────────────────────────────
 async function loadHomeData() {
-  const [gRes, doneRes, epRes] = await Promise.all([
-    api('getGrupos', { sucursal: currentUser.sucursal }),
-    api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: todayISO() }),
-    api('getEnProceso', { sucursal: currentUser.sucursal })
-  ]);
-  localGroups = gRes.ok ? gRes.grupos : [];
-  window._doneIds = new Set(doneRes.ok ? doneRes.doneIds.map(String) : []);
-  // Map groupId -> colaborador para grupos en proceso
-  window._enProceso = {};
-  if (epRes.ok) {
-    epRes.enProceso.forEach(r => {
-      window._enProceso[String(r.group_id)] = r.colaborador;
-    });
+  try {
+    const [gRes, doneRes, epRes] = await Promise.all([
+      api('getGrupos', { sucursal: currentUser.sucursal }),
+      api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: todayISO() }),
+      api('getEnProceso', { sucursal: currentUser.sucursal }).catch(() => ({ ok: false }))
+    ]);
+    localGroups = gRes.ok ? gRes.grupos : [];
+    window._doneIds = new Set(doneRes.ok ? doneRes.doneIds.map(String) : []);
+    window._enProceso = {};
+    if (epRes && epRes.ok && epRes.enProceso) {
+      epRes.enProceso.forEach(r => {
+        window._enProceso[String(r.group_id)] = r.colaborador;
+      });
+    }
+  } catch(e) {
+    console.error('loadHomeData error:', e);
+    localGroups = localGroups || [];
+    window._doneIds = window._doneIds || new Set();
+    window._enProceso = window._enProceso || {};
   }
 }
 
