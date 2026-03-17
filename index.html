@@ -75,9 +75,12 @@
     .group-card { background: var(--surface); border-radius: var(--radius); padding: 14px 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s; }
     .group-card.available { border-color: var(--green-border); background: var(--green-bg); }
     .group-card.done { border-color: var(--red-border); background: var(--red-bg); opacity: 0.8; cursor: default; }
+    .group-card.en-proceso { border-color: #FCD34D; background: #FFFBEB; opacity: 0.92; cursor: default; }
     .group-thumb { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; overflow: hidden; }
     .group-card.available .group-thumb { background: #d0f5f1; }
     .group-card.done .group-thumb { background: #fee2e2; }
+    .group-card.en-proceso .group-thumb { background: #FEF3C7; }
+    .badge-yellow { background: #F59E0B; color: #fff; }
     .group-thumb img { width: 100%; height: 100%; object-fit: cover; }
     .group-info { flex: 1; min-width: 0; }
     .group-name { font-family: var(--font-title); font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -86,9 +89,10 @@
     .badge-green { background: var(--green); color: #fff; }
     .badge-red { background: var(--red); color: #fff; }
 
-    /* COUNT */
-    .count-topbar { background: var(--brand); padding: 13px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 10; }
-    .btn-back { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 22px; cursor: pointer; padding: 0; line-height: 1; }
+    /* COUNT — sticky header + layout responsive */
+    .count-sticky { position: sticky; top: 0; z-index: 10; }
+    .count-topbar { background: var(--brand); padding: 13px 16px; display: flex; align-items: center; gap: 10px; }
+    .btn-back { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 22px; cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0; }
     .count-group-name { font-family: var(--font-title); font-size: 15px; font-weight: 700; color: #fff; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .count-progress-wrap { background: var(--brand-mid); padding: 12px 16px 14px; }
     .progress-header { display: flex; justify-content: space-between; margin-bottom: 7px; }
@@ -96,21 +100,23 @@
     .progress-pct { font-family: var(--font-title); font-size: 14px; font-weight: 700; color: #fff; }
     .progress-bar-bg { height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
     .progress-bar-fill { height: 100%; background: var(--accent2); border-radius: 3px; transition: width 0.4s; }
-    .count-body { flex: 1; overflow-y: auto; padding: 16px; }
-    .item-card { background: var(--surface); border-radius: var(--radius); border: 1.5px solid var(--border); padding: 16px; margin-bottom: 12px; }
+    .count-body { flex: 1; overflow-y: auto; padding: 12px; }
+    .item-card { background: var(--surface); border-radius: var(--radius); border: 1.5px solid var(--border); padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; width: 100%; box-sizing: border-box; }
     .item-card.completed { border-color: var(--green-border); background: var(--green-bg); }
-    .item-image { width: 100%; height: 110px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; position: relative; overflow: hidden; }
-    .item-image img { width: 100%; height: 100%; object-fit: cover; }
+    .item-top { display: flex; gap: 12px; align-items: flex-start; width: 100%; }
+    .item-image { width: 200px; height: 200px; min-width: 200px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; flex-shrink: 0; }
+    .item-image img { width: 200px; height: 200px; object-fit: contain; }
     .item-fallback { font-size: 46px; }
-    .btn-info { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(26,10,10,0.75); color: #fff; border: none; font-size: 13px; font-weight: 700; cursor: pointer; z-index: 2; display: flex; align-items: center; justify-content: center; }
-    .item-name { font-family: var(--font-title); font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
-    .item-unit { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
-    .count-row { display: flex; align-items: center; gap: 8px; }
-    .btn-step { width: 40px; height: 40px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface2); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text); font-weight: 300; }
-    .count-input { flex: 1; text-align: center; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-title); font-size: 24px; font-weight: 700; color: var(--text); background: var(--surface2); outline: none; }
+    .btn-info { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; background: rgba(26,10,10,0.75); color: #fff; border: none; font-size: 12px; font-weight: 700; cursor: pointer; z-index: 2; display: flex; align-items: center; justify-content: center; }
+    .item-meta { flex: 1; min-width: 0; padding-top: 2px; }
+    .item-name { font-family: var(--font-title); font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; word-break: break-word; }
+    .item-unit { font-size: 12px; color: var(--text-muted); }
+    .count-row { display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; }
+    .btn-step { width: 44px; height: 44px; min-width: 44px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface2); font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text); }
+    .count-input { flex: 1; min-width: 0; text-align: center; padding: 10px 4px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-title); font-size: 24px; font-weight: 700; color: var(--text); background: var(--surface2); outline: none; width: 100%; box-sizing: border-box; }
     .count-input:focus { border-color: var(--accent); }
-    .btn-check { width: 40px; height: 40px; border-radius: 8px; border: none; background: var(--brand); color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .item-confirmed { font-size: 12px; font-weight: 500; color: var(--accent2); margin-top: 8px; }
+    .btn-check { width: 44px; height: 44px; min-width: 44px; border-radius: 8px; border: none; background: var(--brand); color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .item-confirmed { font-size: 12px; font-weight: 500; color: var(--accent2); }
 
     /* INFO SHEET */
     .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; justify-content: center; z-index: 100; }
@@ -252,16 +258,18 @@
 
   <!-- CONTEO -->
   <div id="screen-count" class="screen">
-    <div class="count-topbar">
-      <button class="btn-back" onclick="goBack()">&#8592;</button>
-      <div class="count-group-name" id="count-group-name"></div>
-    </div>
-    <div class="count-progress-wrap">
-      <div class="progress-header">
-        <span class="progress-label">Progreso</span>
-        <span class="progress-pct" id="progress-pct">0%</span>
+    <div class="count-sticky">
+      <div class="count-topbar">
+        <button class="btn-back" onclick="goBack()">&#8592;</button>
+        <div class="count-group-name" id="count-group-name"></div>
       </div>
-      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-bar" style="width:0%"></div></div>
+      <div class="count-progress-wrap">
+        <div class="progress-header">
+          <span class="progress-label">Progreso</span>
+          <span class="progress-pct" id="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-bar" style="width:0%"></div></div>
+      </div>
     </div>
     <div class="count-body" id="count-body"></div>
   </div>
@@ -543,12 +551,20 @@ function logout() {
 
 // ── HOME ───────────────────────────────────────────
 async function loadHomeData() {
-  const [gRes, doneRes] = await Promise.all([
+  const [gRes, doneRes, epRes] = await Promise.all([
     api('getGrupos', { sucursal: currentUser.sucursal }),
-    api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: todayISO() })
+    api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: todayISO() }),
+    api('getEnProceso', { sucursal: currentUser.sucursal })
   ]);
   localGroups = gRes.ok ? gRes.grupos : [];
   window._doneIds = new Set(doneRes.ok ? doneRes.doneIds.map(String) : []);
+  // Map groupId -> colaborador para grupos en proceso
+  window._enProceso = {};
+  if (epRes.ok) {
+    epRes.enProceso.forEach(r => {
+      window._enProceso[String(r.group_id)] = r.colaborador;
+    });
+  }
 }
 
 function renderHome() {
@@ -568,29 +584,50 @@ function renderHome() {
   }
   localGroups.forEach(g => {
     const done = window._doneIds.has(String(g.id));
+    const enProcesoUser = window._enProceso && window._enProceso[String(g.id)];
+    const esMio = enProcesoUser === currentUser.nombre;
+    const bloqueado = !done && enProcesoUser && !esMio;
+    let estado = done ? 'done' : (bloqueado ? 'en-proceso' : 'available');
     const card = document.createElement('div');
-    card.className = 'group-card '+(done?'done':'available');
+    card.className = 'group-card ' + estado;
     const thumb = g.imagen_url
       ? `<div class="group-thumb"><img src="${g.imagen_url}" /></div>`
       : `<div class="group-thumb">📦</div>`;
-    card.innerHTML = `${thumb}
+    let badgeClass = done ? 'badge-red' : (bloqueado ? 'badge-yellow' : 'badge-green');
+    let badgeText  = done ? 'Terminado' : (bloqueado ? 'En proceso' : 'Disponible');
+    let subText    = bloqueado ? `Contando: ${enProcesoUser}` : g.sucursal;
+    card.innerHTML = \`\${thumb}
       <div class="group-info">
-        <div class="group-name">${g.nombre}</div>
-        <div class="group-sub">${g.sucursal}</div>
+        <div class="group-name">\${g.nombre}</div>
+        <div class="group-sub">\${subText}</div>
       </div>
-      <div class="group-badge ${done?'badge-red':'badge-green'}">${done?'Terminado':'Disponible'}</div>`;
-    if (!done) card.onclick = () => startCounting(g);
+      <div class="group-badge \${badgeClass}">\${badgeText}</div>\`;
+    if (!done && !bloqueado) card.onclick = () => startCounting(g);
     grid.appendChild(card);
   });
 }
 
-function goHome() { loadHomeData().then(() => { renderHome(); show('home'); }); }
+function goHome() {
+  currentGroup = null;
+  loadHomeData().then(() => { renderHome(); show('home'); });
+}
 
 // ── COUNTING ───────────────────────────────────────
 let currentGroup = null;
 let counts = {};
 
 async function startCounting(group) {
+  // Registrar en Apps Script que estamos contando este grupo
+  const lockRes = await api('startConteo', {
+    group_id: group.id,
+    sucursal: currentUser.sucursal,
+    colaborador: currentUser.nombre
+  });
+  if (!lockRes.ok) {
+    toast('Este grupo ya lo está contando: ' + (lockRes.colaborador || 'otro usuario'));
+    await loadHomeData(); renderHome();
+    return;
+  }
   currentGroup = group;
   counts = {};
   document.getElementById('count-group-name').textContent = group.nombre;
@@ -615,9 +652,13 @@ function renderCountItems() {
       ? `<img src="${item.imagen_url}" />`
       : `<span class="item-fallback">📦</span>`;
     card.innerHTML = `
-      <div class="item-image">${imgContent}<button class="btn-info" onclick="showInfo(${item.id})">?</button></div>
-      <div class="item-name">${item.nombre}</div>
-      <div class="item-unit">Unidad: ${item.unidad}</div>
+      <div class="item-top">
+        <div class="item-image">${imgContent}<button class="btn-info" onclick="showInfo(${item.id})">?</button></div>
+        <div class="item-meta">
+          <div class="item-name">${item.nombre}</div>
+          <div class="item-unit">Unidad: ${item.unidad}</div>
+        </div>
+      </div>
       <div class="count-row">
         <button class="btn-step" onclick="stepCount('${item.id}',-1)">−</button>
         <input class="count-input" id="cinp-${item.id}" type="number" min="0" inputmode="numeric" pattern="[0-9]*" value="${val}" placeholder="0" oninput="updateCount('${item.id}')" />
@@ -671,7 +712,13 @@ function updateProgress(items) {
   document.getElementById('progress-bar').style.width = pct+'%';
 }
 
-function goBack() { renderHome(); show('home'); }
+function goBack() {
+  // Liberar bloqueo al salir sin terminar
+  if (currentGroup) {
+    api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
+  }
+  loadHomeData().then(() => { renderHome(); show('home'); });
+}
 
 function goToSummary() {
   const items = localItems[currentGroup.id]||[];
@@ -705,8 +752,11 @@ async function submitCount() {
   };
   try {
     const res = await api('saveConteo', payload);
-    if (res.ok) { show('success'); }
-    else { toast('Error al guardar: '+res.error); }
+    if (res.ok) {
+      // Liberar bloqueo al terminar correctamente
+      await api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
+      show('success');
+    } else { toast('Error al guardar: '+res.error); }
   } catch(e) { toast('Error de conexión.'); }
   setLoading('btn-guardar',false,'Confirmar y Guardar en Google Sheets');
 }
@@ -865,7 +915,8 @@ async function adminDelInsumo(id) {
 }
 
 async function renderItemsList() {
-  // Load insumos fresh if needed
+  // Siempre recargar para mostrar cambios recientes
+  adminData.insumos = null;
   if (!adminData.insumos || !adminData.insumos.length) {
     const res = await api('getInsumos',{});
     adminData.insumos = res.ok ? res.insumos : [];
