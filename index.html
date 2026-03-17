@@ -602,12 +602,12 @@ function renderHome() {
     let badgeClass = done ? 'badge-red' : (bloqueado ? 'badge-yellow' : 'badge-green');
     let badgeText  = done ? 'Terminado' : (bloqueado ? 'En proceso' : 'Disponible');
     let subText    = bloqueado ? `Contando: ${enProcesoUser}` : g.sucursal;
-    card.innerHTML = \`\${thumb}
+    card.innerHTML = `${thumb}
       <div class="group-info">
-        <div class="group-name">\${g.nombre}</div>
-        <div class="group-sub">\${subText}</div>
+        <div class="group-name">${g.nombre}</div>
+        <div class="group-sub">${subText}</div>
       </div>
-      <div class="group-badge \${badgeClass}">\${badgeText}</div>\`;
+      <div class="group-badge ${badgeClass}">${badgeText}</div>`;
     if (!done && !bloqueado) card.onclick = () => startCounting(g);
     grid.appendChild(card);
   });
