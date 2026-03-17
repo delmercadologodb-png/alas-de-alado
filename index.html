@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a0a0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Alas de Alado" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Alas de Alado — Inventario</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --brand: #1a0a0a; --brand-mid: #2a1010; --accent: #D32F2F; --accent2: #2BBEAD;
+      --surface: #ffffff; --surface2: #F7F3F3; --border: rgba(0,0,0,0.08);
+      --text: #1a0a0a; --text-muted: #7A6A6A;
+      --green: #2BBEAD; --green-bg: #F0FDFB; --green-border: #99E8E1;
+      --red: #D32F2F; --red-bg: #FEF2F2; --red-border: #FECACA;
+      --radius: 14px; --font-title: 'Syne', sans-serif; --font-body: 'DM Sans', sans-serif;
+    }
+    html, body { height: 100%; background: var(--surface2); }
+    #app { font-family: var(--font-body); color: var(--text); max-width: 480px; margin: 0 auto; background: var(--surface2); min-height: 100vh; position: relative; }
+    .screen { display: none; flex-direction: column; min-height: 100vh; }
+    .screen.active { display: flex; }
+
+    /* LOADER */
+    #loader { position: fixed; inset: 0; background: var(--brand); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; gap: 12px; }
+    .loader-logo { font-family: var(--font-title); font-size: 22px; font-weight: 800; color: #fff; }
+    .loader-logo span { color: var(--accent2); }
+    .loader-sub { font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 0.15em; text-transform: uppercase; }
+    .loader-spinner { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent2); border-radius: 50%; animation: spin 0.8s linear infinite; margin-top: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* LOGIN */
+    .login-bg { background: var(--brand); flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem 1.5rem; }
+    .login-badge { font-family: var(--font-title); font-size: 10px; font-weight: 800; letter-spacing: 0.2em; color: var(--accent2); text-transform: uppercase; margin-bottom: 8px; }
+    .login-title { font-family: var(--font-title); font-size: 28px; font-weight: 800; color: #fff; text-align: center; line-height: 1.1; margin-bottom: 6px; }
+    .login-sub { font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 36px; }
+    .login-card { background: #fff; border-radius: 20px; padding: 1.75rem; width: 100%; display: flex; flex-direction: column; gap: 14px; }
+    .field-label { font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 5px; }
+    .field-input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: var(--font-body); font-size: 15px; color: var(--text); background: var(--surface2); outline: none; transition: border 0.2s; }
+    .field-input:focus { border-color: var(--accent); }
+    .btn-primary { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 14px; font-family: var(--font-title); font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; transition: transform 0.1s, opacity 0.15s; }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:disabled { opacity: 0.6; }
+    .login-err { font-size: 13px; color: var(--accent); text-align: center; display: none; font-weight: 500; }
+
+    /* TOPBAR */
+    .topbar { background: var(--brand); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; position: sticky; top: 0; z-index: 10; }
+    .topbar-brand { font-family: var(--font-title); font-size: 14px; font-weight: 800; color: #fff; white-space: nowrap; }
+    .topbar-brand span { color: var(--accent2); }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .topbar-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .topbar-name { font-size: 11px; color: rgba(255,255,255,0.6); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btn-logout { background: none; border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; color: rgba(255,255,255,0.5); font-size: 11px; padding: 4px 8px; cursor: pointer; }
+
+    /* WELCOME */
+    .welcome-banner { background: linear-gradient(135deg, #1a0a0a 0%, #3a1515 100%); padding: 18px 16px; }
+    .welcome-label { font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 0.06em; text-transform: uppercase; }
+    .welcome-name { font-family: var(--font-title); font-size: 22px; font-weight: 700; color: #fff; margin-top: 2px; }
+    .welcome-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .tag { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
+    .tag-suc { background: var(--accent); color: #fff; }
+    .tag-area { background: rgba(43,190,173,0.2); color: var(--accent2); }
+    .welcome-date { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 6px; }
+
+    /* GROUPS */
+    .groups-body { flex: 1; padding: 16px; overflow-y: auto; }
+    .section-label { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+    .groups-grid { display: flex; flex-direction: column; gap: 9px; }
+    .group-card { background: var(--surface); border-radius: var(--radius); padding: 14px 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s; }
+    .group-card.available { border-color: var(--green-border); background: var(--green-bg); }
+    .group-card.done { border-color: var(--red-border); background: var(--red-bg); opacity: 0.8; cursor: default; }
+    .group-thumb { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; overflow: hidden; }
+    .group-card.available .group-thumb { background: #d0f5f1; }
+    .group-card.done .group-thumb { background: #fee2e2; }
+    .group-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .group-info { flex: 1; min-width: 0; }
+    .group-name { font-family: var(--font-title); font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .group-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .group-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; flex-shrink: 0; }
+    .badge-green { background: var(--green); color: #fff; }
+    .badge-red { background: var(--red); color: #fff; }
+
+    /* COUNT */
+    .count-topbar { background: var(--brand); padding: 13px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 10; }
+    .btn-back { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 22px; cursor: pointer; padding: 0; line-height: 1; }
+    .count-group-name { font-family: var(--font-title); font-size: 15px; font-weight: 700; color: #fff; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .count-progress-wrap { background: var(--brand-mid); padding: 12px 16px 14px; }
+    .progress-header { display: flex; justify-content: space-between; margin-bottom: 7px; }
+    .progress-label { font-size: 12px; color: rgba(255,255,255,0.4); }
+    .progress-pct { font-family: var(--font-title); font-size: 14px; font-weight: 700; color: #fff; }
+    .progress-bar-bg { height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--accent2); border-radius: 3px; transition: width 0.4s; }
+    .count-body { flex: 1; overflow-y: auto; padding: 16px; }
+    .item-card { background: var(--surface); border-radius: var(--radius); border: 1.5px solid var(--border); padding: 16px; margin-bottom: 12px; }
+    .item-card.completed { border-color: var(--green-border); background: var(--green-bg); }
+    .item-image { width: 100%; height: 110px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; position: relative; overflow: hidden; }
+    .item-image img { width: 100%; height: 100%; object-fit: cover; }
+    .item-fallback { font-size: 46px; }
+    .btn-info { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(26,10,10,0.75); color: #fff; border: none; font-size: 13px; font-weight: 700; cursor: pointer; z-index: 2; display: flex; align-items: center; justify-content: center; }
+    .item-name { font-family: var(--font-title); font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    .item-unit { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+    .count-row { display: flex; align-items: center; gap: 8px; }
+    .btn-step { width: 40px; height: 40px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface2); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text); font-weight: 300; }
+    .count-input { flex: 1; text-align: center; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-title); font-size: 24px; font-weight: 700; color: var(--text); background: var(--surface2); outline: none; }
+    .count-input:focus { border-color: var(--accent); }
+    .btn-check { width: 40px; height: 40px; border-radius: 8px; border: none; background: var(--brand); color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .item-confirmed { font-size: 12px; font-weight: 500; color: var(--accent2); margin-top: 8px; }
+
+    /* INFO SHEET */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; justify-content: center; z-index: 100; }
+    .overlay.open { display: flex; }
+    .bottom-sheet { background: #fff; border-radius: 20px 20px 0 0; padding: 20px 18px 36px; width: 100%; max-width: 480px; }
+    .sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+    .sheet-title { font-family: var(--font-title); font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+    .info-row { display: flex; gap: 10px; margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
+    .info-row strong { font-weight: 600; display: block; }
+    .btn-sheet-close { margin-top: 16px; width: 100%; padding: 13px; background: var(--brand); color: #fff; border: none; border-radius: 10px; font-family: var(--font-title); font-size: 14px; font-weight: 700; cursor: pointer; }
+
+    /* SUMMARY */
+    .summary-header { background: var(--brand); padding: 22px 16px; text-align: center; }
+    .summary-icon { width: 52px; height: 52px; border-radius: 50%; background: var(--accent2); display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; margin: 0 auto 10px; }
+    .summary-title { font-family: var(--font-title); font-size: 19px; font-weight: 700; color: #fff; }
+    .summary-sub { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+    .summary-body { flex: 1; overflow-y: auto; padding: 16px; }
+    .summary-meta { background: var(--surface); border-radius: var(--radius); padding: 14px 15px; margin-bottom: 14px; border: 1.5px solid var(--border); font-size: 13px; color: var(--text-muted); line-height: 1.9; }
+    .summary-meta strong { color: var(--text); font-weight: 600; }
+    .summary-table { background: var(--surface); border-radius: var(--radius); overflow: hidden; border: 1.5px solid var(--border); margin-bottom: 16px; }
+    .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-val { font-family: var(--font-title); font-weight: 700; }
+    .btn-secondary { width: 100%; padding: 12px; background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); border-radius: 12px; font-family: var(--font-body); font-size: 14px; cursor: pointer; margin-bottom: 10px; }
+
+    /* SUCCESS */
+    .success-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; background: var(--brand); text-align: center; }
+    .success-icon { width: 76px; height: 76px; border-radius: 50%; background: var(--accent2); display: flex; align-items: center; justify-content: center; font-size: 32px; color: #fff; margin-bottom: 22px; }
+    .success-title { font-family: var(--font-title); font-size: 26px; font-weight: 800; color: #fff; margin-bottom: 10px; }
+    .success-sub { font-size: 14px; color: rgba(255,255,255,0.45); line-height: 1.6; margin-bottom: 30px; }
+
+    /* ADMIN */
+    .admin-tabs { display: flex; background: var(--brand-mid); padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.06); overflow-x: auto; }
+    .admin-tab { padding: 11px 12px; font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.38); cursor: pointer; border-bottom: 2px solid transparent; font-family: var(--font-body); background: none; border-top: none; border-left: none; border-right: none; white-space: nowrap; }
+    .admin-tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+    .admin-panel { display: none; }
+    .admin-panel.active { display: block; }
+    .admin-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+    .a-title { font-family: var(--font-title); font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 9px; margin-top: 4px; }
+    .a-form { background: var(--surface); border-radius: var(--radius); padding: 14px; border: 1.5px solid var(--border); margin-bottom: 14px; display: flex; flex-direction: column; gap: 9px; }
+    .a-input { width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-body); font-size: 13px; color: var(--text); background: var(--surface2); outline: none; }
+    .a-input:focus { border-color: var(--accent); }
+    .a-select { width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-body); font-size: 13px; color: var(--text); background: var(--surface2); outline: none; }
+    .btn-add { background: var(--brand); color: #fff; border: none; border-radius: 8px; padding: 11px; font-family: var(--font-title); font-size: 13px; font-weight: 700; cursor: pointer; }
+    .a-card { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; border: 1.5px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .a-card-info { flex: 1; min-width: 0; }
+    .a-card-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .a-card-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .btn-del { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); border-radius: 6px; padding: 4px 9px; font-size: 11px; cursor: pointer; flex-shrink: 0; }
+    .suc-pill { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: var(--accent); color: #fff; margin-left: 4px; vertical-align: middle; }
+    .suc-pill.c2 { background: var(--accent2); color: #fff; }
+    .suc-pill.c3 { background: #7B5EA7; }
+
+    /* UPLOAD */
+    .upload-label { font-size: 10px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; }
+    .img-upload-area { border: 2px dashed var(--border); border-radius: 10px; padding: 14px; text-align: center; cursor: pointer; position: relative; background: var(--surface2); }
+    .img-upload-area:hover { border-color: var(--accent2); }
+    .img-upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .img-preview { width: 100%; height: 75px; object-fit: cover; border-radius: 7px; display: none; }
+    .img-ph { font-size: 11px; color: var(--text-muted); }
+
+    /* RECORDS */
+    .rec-filter { display: flex; gap: 6px; padding: 12px 0 4px; overflow-x: auto; }
+    .rec-chip { padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-muted); white-space: nowrap; font-family: var(--font-body); }
+    .rec-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .rec-card { background: var(--surface); border-radius: var(--radius); padding: 13px 14px; margin-bottom: 8px; border: 1.5px solid var(--border); }
+    .rec-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+    .rec-group { font-family: var(--font-title); font-size: 13px; font-weight: 700; }
+    .rec-dt { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .rec-suc { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; background: var(--accent); color: #fff; flex-shrink: 0; }
+    .rec-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 7px; line-height: 1.7; }
+    .rec-meta span { color: var(--text); font-weight: 500; }
+    .rec-items { display: flex; flex-wrap: wrap; gap: 5px; }
+    .rec-pill { background: var(--surface2); border-radius: 6px; padding: 3px 8px; font-size: 11px; }
+    .rec-pill strong { font-weight: 600; color: var(--brand); }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--brand); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; z-index: 999; display: none; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .toast.show { display: block; animation: fadeInOut 2.5s forwards; }
+    @keyframes fadeInOut { 0%{opacity:0;transform:translateX(-50%) translateY(8px)} 15%{opacity:1;transform:translateX(-50%) translateY(0)} 75%{opacity:1} 100%{opacity:0} }
+  </style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">Alas de <span>Alado</span></div>
+  <div class="loader-sub">Inventario</div>
+  <div class="loader-spinner"></div>
+</div>
+
+<div id="app">
+
+  <!-- LOGIN -->
+  <div id="screen-login" class="screen">
+    <div class="login-bg">
+      <div class="login-badge">Inventario</div>
+      <div class="login-title">Alas de Alado</div>
+      <div class="login-sub">Control de Existencias</div>
+      <div class="login-card">
+        <div>
+          <label class="field-label">Usuario</label>
+          <input type="text" id="inp-user" class="field-input" placeholder="nombre de usuario" autocomplete="username" />
+        </div>
+        <div>
+          <label class="field-label">Contraseña</label>
+          <input type="password" id="inp-pass" class="field-input" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <div class="login-err" id="login-err">Usuario o contraseña incorrectos</div>
+        <button class="btn-primary" id="btn-login" onclick="doLogin()">Ingresar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="screen-home" class="screen">
+    <div class="topbar">
+      <div class="topbar-brand">Alas de <span>Alado</span></div>
+      <div class="topbar-right">
+        <div class="topbar-avatar" id="avatar-home"></div>
+        <span class="topbar-name" id="topbar-uname"></span>
+        <button class="btn-logout" onclick="logout()">Salir</button>
+      </div>
+    </div>
+    <div class="welcome-banner">
+      <div class="welcome-label">Bienvenido</div>
+      <div class="welcome-name" id="welcome-name"></div>
+      <div class="welcome-tags">
+        <span class="tag tag-suc" id="welcome-suc"></span>
+        <span class="tag tag-area" id="welcome-area"></span>
+      </div>
+      <div class="welcome-date" id="welcome-date"></div>
+    </div>
+    <div class="groups-body">
+      <div class="section-label">Grupos de inventario</div>
+      <div class="groups-grid" id="groups-grid"></div>
+    </div>
+  </div>
+
+  <!-- CONTEO -->
+  <div id="screen-count" class="screen">
+    <div class="count-topbar">
+      <button class="btn-back" onclick="goBack()">&#8592;</button>
+      <div class="count-group-name" id="count-group-name"></div>
+    </div>
+    <div class="count-progress-wrap">
+      <div class="progress-header">
+        <span class="progress-label">Progreso</span>
+        <span class="progress-pct" id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-bar" style="width:0%"></div></div>
+    </div>
+    <div class="count-body" id="count-body"></div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div id="screen-summary" class="screen">
+    <div class="summary-header">
+      <div class="summary-icon">&#10003;</div>
+      <div class="summary-title">Resumen del conteo</div>
+      <div class="summary-sub" id="summary-sub"></div>
+    </div>
+    <div class="summary-body">
+      <div class="summary-meta" id="summary-meta"></div>
+      <div class="a-title">Cantidades registradas</div>
+      <div class="summary-table" id="summary-table"></div>
+      <button class="btn-secondary" onclick="show('count')">&#8592; Regresar a editar</button>
+      <button class="btn-primary" id="btn-guardar" onclick="submitCount()">Confirmar y Guardar en Google Sheets</button>
+    </div>
+  </div>
+
+  <!-- ÉXITO -->
+  <div id="screen-success" class="screen">
+    <div class="success-wrap">
+      <div class="success-icon">&#10003;</div>
+      <div class="success-title">¡Guardado!</div>
+      <div class="success-sub">El inventario fue registrado exitosamente.<br>Los datos ya están disponibles en Google Sheets.</div>
+      <button class="btn-primary" style="max-width:200px;" onclick="goHome()">Volver al inicio</button>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="screen-admin" class="screen">
+    <div class="topbar">
+      <div class="topbar-brand">Alas de <span>Alado</span></div>
+      <button class="btn-logout" onclick="logout()" style="margin-left:auto;">Salir</button>
+    </div>
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchTab('usuarios')">Usuarios</button>
+      <button class="admin-tab" onclick="switchTab('grupos')">Grupos</button>
+      <button class="admin-tab" onclick="switchTab('insumos')">Insumos</button>
+      <button class="admin-tab" onclick="switchTab('registros')">Registros</button>
+    </div>
+    <div class="admin-body">
+
+      <!-- USUARIOS -->
+      <div class="admin-panel active" id="panel-usuarios">
+        <div class="a-title" style="margin-top:10px;">Agregar colaborador</div>
+        <div class="a-form">
+          <input class="a-input" id="nu-nombre" placeholder="Nombre completo" />
+          <select class="a-select" id="nu-sucursal">
+            <option value="">Sucursal</option>
+            <option>Centro</option><option>Cibeles</option><option>Río Mayo</option>
+          </select>
+          <select class="a-select" id="nu-area">
+            <option value="">Área</option>
+            <option>Cocina</option><option>Barra</option><option>Caja</option>
+            <option>Capitán</option><option>Administración</option>
+          </select>
+          <input class="a-input" id="nu-user" placeholder="Usuario (login)" />
+          <input class="a-input" type="password" id="nu-pass" placeholder="Contraseña" />
+          <button class="btn-add" onclick="adminAddUsuario()">+ Agregar colaborador</button>
+        </div>
+        <div class="a-title">Colaboradores</div>
+        <div id="users-list"></div>
+      </div>
+
+      <!-- GRUPOS -->
+      <div class="admin-panel" id="panel-grupos">
+        <div class="a-title" style="margin-top:10px;">Agregar grupo</div>
+        <div class="a-form">
+          <input class="a-input" id="ng-nombre" placeholder="Nombre del grupo" />
+          <select class="a-select" id="ng-sucursal">
+            <option value="">Sucursal</option>
+            <option>Centro</option><option>Cibeles</option><option>Río Mayo</option>
+          </select>
+          <div>
+            <div class="upload-label">Imagen del grupo (opcional)</div>
+            <div class="img-upload-area" id="group-upload-area">
+              <input type="file" accept="image/*" onchange="handleImg(event,'group')" />
+              <img id="group-img-preview" class="img-preview" />
+              <div id="group-upload-ph" class="img-ph">📷 Toca para subir imagen</div>
+            </div>
+          </div>
+          <button class="btn-add" onclick="adminAddGrupo()">+ Agregar grupo</button>
+        </div>
+        <div class="a-title">Grupos existentes</div>
+        <div id="groups-list"></div>
+      </div>
+
+      <!-- INSUMOS -->
+      <div class="admin-panel" id="panel-insumos">
+        <div class="a-title" style="margin-top:10px;">Agregar insumo</div>
+        <div class="a-form">
+          <select class="a-select" id="ni-sucursal" onchange="filterGroupsForInsumo()">
+            <option value="">Sucursal</option>
+            <option>Centro</option><option>Cibeles</option><option>Río Mayo</option>
+          </select>
+          <select class="a-select" id="ni-grupo"><option value="">Selecciona grupo</option></select>
+          <input class="a-input" id="ni-nombre" placeholder="Nombre del insumo" />
+          <input class="a-input" id="ni-unidad" placeholder="Unidad (ej. piezas, kg, litros)" />
+          <input class="a-input" id="ni-ubicacion" placeholder="Ubicación en anaquel" />
+          <textarea class="a-input" id="ni-instrucciones" placeholder="Instrucciones de conteo..." rows="2"></textarea>
+          <div>
+            <div class="upload-label">Imagen del insumo</div>
+            <div class="img-upload-area" id="item-upload-area">
+              <input type="file" accept="image/*" onchange="handleImg(event,'item')" />
+              <img id="item-img-preview" class="img-preview" />
+              <div id="item-upload-ph" class="img-ph">📷 Toca para subir foto</div>
+            </div>
+          </div>
+          <button class="btn-add" onclick="adminAddInsumo()">+ Agregar insumo</button>
+        </div>
+        <div class="a-title">Insumos por sucursal</div>
+        <div id="items-list"></div>
+      </div>
+
+      <!-- REGISTROS -->
+      <div class="admin-panel" id="panel-registros">
+        <div class="rec-filter" id="rec-filter">
+          <button class="rec-chip active" onclick="setRecFilter('Todas')">Todas</button>
+          <button class="rec-chip" onclick="setRecFilter('Centro')">Centro</button>
+          <button class="rec-chip" onclick="setRecFilter('Cibeles')">Cibeles</button>
+          <button class="rec-chip" onclick="setRecFilter('Río Mayo')">Río Mayo</button>
+        </div>
+        <div id="records-list" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO OVERLAY -->
+  <div class="overlay" id="info-overlay" onclick="closeOverlay('info-overlay',event)">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title" id="info-item-name"></div>
+      <div class="info-row"><span style="font-size:16px;flex-shrink:0;margin-top:2px;">📍</span><div><strong>Ubicación</strong><span id="info-ubicacion"></span></div></div>
+      <div class="info-row"><span style="font-size:16px;flex-shrink:0;margin-top:2px;">📋</span><div><strong>Instrucciones</strong><span id="info-instrucciones"></span></div></div>
+      <button class="btn-sheet-close" onclick="closeOverlayBtn('info-overlay')">Entendido</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────
+// IMPORTANTE: Reemplaza esta URL con la de tu Google Apps Script desplegado
+const API_URL = "https://script.google.com/macros/s/AKfycbyQreJJTEZFJdIx2kDNPxvkA6_71pP298vtZzn1BXcPI3534HpI5moaL6xmlRMlU0De/exec";
+
+// ── HELPERS ────────────────────────────────────────
+const DAYS   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const SUCS   = ['Centro','Cibeles','Río Mayo'];
+
+function todayLabel() {
+  const d = new Date();
+  return `${DAYS[d.getDay()]}, ${d.getDate()} de ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+function nowDatetime() {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function getInitials(n) { return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+
+async function api(action, data={}) {
+  const url = API_URL + "?action=" + action;
+  const res = await fetch(url, {
+    method: "POST",
+    body: JSON.stringify({ action, ...data }),
+    headers: { "Content-Type": "application/json" }
+  });
+  return res.json();
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show';
+  setTimeout(() => t.className = 'toast', 2600);
+}
+
+function setLoading(btnId, loading, defaultText) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? 'Cargando...' : defaultText;
+}
+
+// ── IMAGE COMPRESSION ──────────────────────────────
+let pendingImgs = { group: null, item: null };
+
+function compressToWebP(file, maxW, maxH, q) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = Math.min(maxW/img.width, maxH/img.height, 1);
+        const w = Math.round(img.width*ratio), h = Math.round(img.height*ratio);
+        const c = document.createElement('canvas');
+        c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        res(c.toDataURL('image/webp',q));
+      };
+      img.src = e.target.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+function handleImg(event, type) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const cfg = type==='group' ? [300,300,0.8] : [600,400,0.82];
+  compressToWebP(file,...cfg).then(webp => {
+    pendingImgs[type] = webp;
+    document.getElementById(type+'-img-preview').src = webp;
+    document.getElementById(type+'-img-preview').style.display = 'block';
+    document.getElementById(type+'-upload-ph').style.display = 'none';
+  });
+}
+
+function resetUpload(type) {
+  pendingImgs[type] = null;
+  const p = document.getElementById(type+'-img-preview');
+  p.style.display='none'; p.src='';
+  document.getElementById(type+'-upload-ph').style.display='block';
+  const a = document.getElementById(type+'-upload-area');
+  const inp = a && a.querySelector('input[type=file]');
+  if(inp) inp.value='';
+}
+
+// ── AUTH ───────────────────────────────────────────
+let currentUser = null;
+let localGroups = [];
+let localItems  = {};
+
+async function doLogin() {
+  const username = document.getElementById('inp-user').value.trim();
+  const password = document.getElementById('inp-pass').value.trim();
+  if (!username || !password) return;
+  setLoading('btn-login', true, 'Ingresar');
+  try {
+    const res = await api('login', { username, password });
+    if (!res.ok) {
+      document.getElementById('login-err').style.display = 'block';
+    } else {
+      document.getElementById('login-err').style.display = 'none';
+      currentUser = res.user;
+      if (currentUser.role === 'admin') {
+        await loadAdminData();
+        show('admin');
+      } else {
+        await loadHomeData();
+        renderHome();
+        show('home');
+      }
+    }
+  } catch(e) {
+    toast('Error de conexión. Verifica tu internet.');
+  }
+  setLoading('btn-login', false, 'Ingresar');
+}
+
+function logout() {
+  currentUser = null;
+  localGroups = []; localItems = {};
+  document.getElementById('inp-user').value='';
+  document.getElementById('inp-pass').value='';
+  show('login');
+}
+
+// ── HOME ───────────────────────────────────────────
+async function loadHomeData() {
+  const [gRes, doneRes] = await Promise.all([
+    api('getGrupos', { sucursal: currentUser.sucursal }),
+    api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: todayISO() })
+  ]);
+  localGroups = gRes.ok ? gRes.grupos : [];
+  window._doneIds = new Set(doneRes.ok ? doneRes.doneIds.map(String) : []);
+}
+
+function renderHome() {
+  const u = currentUser;
+  document.getElementById('avatar-home').textContent = getInitials(u.nombre);
+  document.getElementById('topbar-uname').textContent = u.nombre.split(' ')[0];
+  document.getElementById('welcome-name').textContent = u.nombre;
+  document.getElementById('welcome-suc').textContent  = u.sucursal;
+  document.getElementById('welcome-area').textContent = u.area;
+  document.getElementById('welcome-date').textContent = todayLabel();
+
+  const grid = document.getElementById('groups-grid');
+  grid.innerHTML = '';
+  if (!localGroups.length) {
+    grid.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:12px 0;">No hay grupos asignados para esta sucursal.</div>';
+    return;
+  }
+  localGroups.forEach(g => {
+    const done = window._doneIds.has(String(g.id));
+    const card = document.createElement('div');
+    card.className = 'group-card '+(done?'done':'available');
+    const thumb = g.imagen_url
+      ? `<div class="group-thumb"><img src="${g.imagen_url}" /></div>`
+      : `<div class="group-thumb">📦</div>`;
+    card.innerHTML = `${thumb}
+      <div class="group-info">
+        <div class="group-name">${g.nombre}</div>
+        <div class="group-sub">${g.sucursal}</div>
+      </div>
+      <div class="group-badge ${done?'badge-red':'badge-green'}">${done?'Terminado':'Disponible'}</div>`;
+    if (!done) card.onclick = () => startCounting(g);
+    grid.appendChild(card);
+  });
+}
+
+function goHome() { loadHomeData().then(() => { renderHome(); show('home'); }); }
+
+// ── COUNTING ───────────────────────────────────────
+let currentGroup = null;
+let counts = {};
+
+async function startCounting(group) {
+  currentGroup = group;
+  counts = {};
+  document.getElementById('count-group-name').textContent = group.nombre;
+  const res = await api('getInsumos', { group_id: group.id });
+  localItems[group.id] = res.ok ? res.insumos : [];
+  renderCountItems();
+  show('count');
+}
+
+function renderCountItems() {
+  const items = localItems[currentGroup.id] || [];
+  updateProgress(items);
+  const body = document.getElementById('count-body');
+  body.innerHTML = '';
+  items.forEach(item => {
+    const val = counts[item.id] !== undefined ? counts[item.id] : '';
+    const done = val !== '';
+    const card = document.createElement('div');
+    card.className = 'item-card'+(done?' completed':'');
+    card.id = 'icard-'+item.id;
+    const imgContent = item.imagen_url
+      ? `<img src="${item.imagen_url}" />`
+      : `<span class="item-fallback">📦</span>`;
+    card.innerHTML = `
+      <div class="item-image">${imgContent}<button class="btn-info" onclick="showInfo(${item.id})">?</button></div>
+      <div class="item-name">${item.nombre}</div>
+      <div class="item-unit">Unidad: ${item.unidad}</div>
+      <div class="count-row">
+        <button class="btn-step" onclick="stepCount('${item.id}',-1)">−</button>
+        <input class="count-input" id="cinp-${item.id}" type="number" min="0" inputmode="numeric" pattern="[0-9]*" value="${val}" placeholder="0" oninput="updateCount('${item.id}')" />
+        <button class="btn-step" onclick="stepCount('${item.id}',1)">+</button>
+        <button class="btn-check" onclick="confirmItem('${item.id}')">&#10003;</button>
+      </div>
+      ${done?`<div class="item-confirmed">✓ Registrado: ${val} ${item.unidad}</div>`:''}`;
+    body.appendChild(card);
+  });
+}
+
+function updateCount(id) {
+  const v = document.getElementById('cinp-'+id).value;
+  if (v===''||isNaN(v)) delete counts[id];
+  else counts[id] = Math.max(0,parseInt(v));
+  updateProgress(localItems[currentGroup.id]||[]);
+}
+
+function stepCount(id, d) {
+  const inp = document.getElementById('cinp-'+id);
+  const next = Math.max(0,(parseInt(inp.value)||0)+d);
+  inp.value=next; counts[id]=next;
+  refreshConfirmed(id,next);
+  updateProgress(localItems[currentGroup.id]||[]);
+}
+
+function confirmItem(id) {
+  const inp = document.getElementById('cinp-'+id);
+  if (inp.value===''||isNaN(inp.value)) { toast('Ingresa un valor numérico'); return; }
+  counts[id] = Math.max(0,parseInt(inp.value));
+  refreshConfirmed(id,counts[id]);
+  const items = localItems[currentGroup.id]||[];
+  updateProgress(items);
+  if (items.every(i => counts[i.id]!==undefined)) setTimeout(goToSummary,300);
+}
+
+function refreshConfirmed(id, val) {
+  const item = (localItems[currentGroup.id]||[]).find(x=>String(x.id)===String(id));
+  const card = document.getElementById('icard-'+id);
+  if (!card||!item) return;
+  card.classList.add('completed');
+  let el = card.querySelector('.item-confirmed');
+  const txt = `✓ Registrado: ${val} ${item.unidad}`;
+  if (el) el.textContent=txt;
+  else { const d=document.createElement('div'); d.className='item-confirmed'; d.textContent=txt; card.appendChild(d); }
+}
+
+function updateProgress(items) {
+  const pct = items.length ? Math.round(items.filter(i=>counts[i.id]!==undefined).length/items.length*100) : 0;
+  document.getElementById('progress-pct').textContent = pct+'%';
+  document.getElementById('progress-bar').style.width = pct+'%';
+}
+
+function goBack() { renderHome(); show('home'); }
+
+function goToSummary() {
+  const items = localItems[currentGroup.id]||[];
+  document.getElementById('summary-sub').textContent = currentGroup.nombre+' · '+currentUser.sucursal;
+  document.getElementById('summary-meta').innerHTML =
+    `<strong>Colaborador:</strong> ${currentUser.nombre}<br>
+     <strong>Sucursal:</strong> ${currentUser.sucursal}<br>
+     <strong>Área:</strong> ${currentUser.area}<br>
+     <strong>Fecha y hora:</strong> ${nowDatetime()}`;
+  const table = document.getElementById('summary-table');
+  table.innerHTML='';
+  items.forEach(item => {
+    const val = counts[item.id]!==undefined?counts[item.id]:'—';
+    const row = document.createElement('div'); row.className='summary-row';
+    row.innerHTML=`<span>${item.nombre}</span><span class="summary-val">${val} ${item.unidad}</span>`;
+    table.appendChild(row);
+  });
+  show('summary');
+}
+
+async function submitCount() {
+  setLoading('btn-guardar',true,'Confirmar y Guardar en Google Sheets');
+  const items = localItems[currentGroup.id]||[];
+  const payload = {
+    group_id: currentGroup.id,
+    group_nombre: currentGroup.nombre,
+    sucursal: currentUser.sucursal,
+    colaborador: currentUser.nombre,
+    area: currentUser.area,
+    items: items.map(i=>({ nombre:i.nombre, unidad:i.unidad, cantidad:counts[i.id]??0 }))
+  };
+  try {
+    const res = await api('saveConteo', payload);
+    if (res.ok) { show('success'); }
+    else { toast('Error al guardar: '+res.error); }
+  } catch(e) { toast('Error de conexión.'); }
+  setLoading('btn-guardar',false,'Confirmar y Guardar en Google Sheets');
+}
+
+// ── INFO OVERLAY ───────────────────────────────────
+function showInfo(id) {
+  const item = (localItems[currentGroup.id]||[]).find(i=>String(i.id)===String(id));
+  if (!item) return;
+  document.getElementById('info-item-name').textContent = item.nombre;
+  document.getElementById('info-ubicacion').textContent = item.ubicacion||'—';
+  document.getElementById('info-instrucciones').textContent = item.instrucciones||'—';
+  document.getElementById('info-overlay').classList.add('open');
+}
+function closeOverlay(id, e) { if(e.target===document.getElementById(id)) document.getElementById(id).classList.remove('open'); }
+function closeOverlayBtn(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── ADMIN DATA ─────────────────────────────────────
+let adminData = { usuarios:[], grupos:[], insumos:[] };
+let recFilter = 'Todas';
+
+async function loadAdminData() {
+  const [uRes, gRes] = await Promise.all([
+    api('getUsuarios'),
+    api('getGrupos',{})
+  ]);
+  adminData.usuarios = uRes.ok ? uRes.usuarios : [];
+  adminData.grupos   = gRes.ok ? gRes.grupos   : [];
+  renderUsersList(); renderGroupsList(); renderItemsList();
+}
+
+function switchTab(tab) {
+  const tabs = ['usuarios','grupos','insumos','registros'];
+  document.querySelectorAll('.admin-tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
+  document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if (tab==='registros') loadAndRenderRecords();
+}
+
+// USUARIOS
+async function adminAddUsuario() {
+  const nombre   = document.getElementById('nu-nombre').value.trim();
+  const sucursal = document.getElementById('nu-sucursal').value;
+  const area     = document.getElementById('nu-area').value;
+  const username = document.getElementById('nu-user').value.trim();
+  const password = document.getElementById('nu-pass').value.trim();
+  if (!nombre||!sucursal||!area||!username||!password) { toast('Llena todos los campos'); return; }
+  const res = await api('addUsuario',{nombre,sucursal,area,username,password});
+  if (!res.ok) { toast(res.error||'Error'); return; }
+  adminData.usuarios.push({id:res.id,nombre,sucursal,area,username});
+  ['nu-nombre','nu-user','nu-pass'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nu-sucursal').value='';
+  document.getElementById('nu-area').value='';
+  renderUsersList(); toast('Colaborador agregado ✓');
+}
+
+async function adminDelUsuario(id) {
+  await api('delUsuario',{id});
+  adminData.usuarios = adminData.usuarios.filter(u=>String(u.id)!==String(id));
+  renderUsersList();
+}
+
+function renderUsersList() {
+  const list = document.getElementById('users-list');
+  list.innerHTML='';
+  if (!adminData.usuarios.length) { list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">Sin colaboradores aún.</div>'; return; }
+  const sucClass = {'Centro':'','Cibeles':'c2','Río Mayo':'c3'};
+  adminData.usuarios.forEach(u=>{
+    const card=document.createElement('div'); card.className='a-card';
+    card.innerHTML=`
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;">${getInitials(u.nombre)}</div>
+      <div class="a-card-info">
+        <div class="a-card-name">${u.nombre} <span class="suc-pill ${sucClass[u.sucursal]||''}">${u.sucursal}</span></div>
+        <div class="a-card-sub">${u.area} · @${u.username}</div>
+      </div>
+      <button class="btn-del" onclick="adminDelUsuario('${u.id}')">Eliminar</button>`;
+    list.appendChild(card);
+  });
+}
+
+// GRUPOS
+async function adminAddGrupo() {
+  const nombre   = document.getElementById('ng-nombre').value.trim();
+  const sucursal = document.getElementById('ng-sucursal').value;
+  if (!nombre||!sucursal) { toast('Llena nombre y sucursal'); return; }
+  const res = await api('addGrupo',{nombre,sucursal,imagen_url:pendingImgs.group||''});
+  if (!res.ok) { toast(res.error||'Error'); return; }
+  adminData.grupos.push({id:res.id,nombre,sucursal,imagen_url:pendingImgs.group||''});
+  document.getElementById('ng-nombre').value='';
+  document.getElementById('ng-sucursal').value='';
+  resetUpload('group');
+  renderGroupsList(); toast('Grupo agregado ✓');
+}
+
+async function adminDelGrupo(id) {
+  await api('delGrupo',{id});
+  adminData.grupos = adminData.grupos.filter(g=>String(g.id)!==String(id));
+  renderGroupsList(); renderItemsList();
+}
+
+function renderGroupsList() {
+  const list = document.getElementById('groups-list');
+  list.innerHTML='';
+  SUCS.forEach(suc=>{
+    const gs = adminData.grupos.filter(g=>g.sucursal===suc);
+    if (!gs.length) return;
+    const t=document.createElement('div'); t.className='a-title'; t.textContent='Sucursal '+suc; list.appendChild(t);
+    gs.forEach(g=>{
+      const card=document.createElement('div'); card.className='a-card';
+      const thumb=g.imagen_url
+        ?`<img src="${g.imagen_url}" style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;" />`
+        :`<div style="width:30px;height:30px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">📦</div>`;
+      card.innerHTML=`${thumb}
+        <div class="a-card-info">
+          <div class="a-card-name">${g.nombre}</div>
+          <div class="a-card-sub">${g.sucursal}</div>
+        </div>
+        <button class="btn-del" onclick="adminDelGrupo('${g.id}')">Eliminar</button>`;
+      list.appendChild(card);
+    });
+  });
+}
+
+// INSUMOS
+function filterGroupsForInsumo() {
+  const suc = document.getElementById('ni-sucursal').value;
+  const sel = document.getElementById('ni-grupo');
+  sel.innerHTML='<option value="">Selecciona grupo</option>';
+  adminData.grupos.filter(g=>g.sucursal===suc).forEach(g=>{
+    const o=document.createElement('option'); o.value=g.id; o.textContent=g.nombre; sel.appendChild(o);
+  });
+}
+
+async function adminAddInsumo() {
+  const group_id     = document.getElementById('ni-grupo').value;
+  const nombre       = document.getElementById('ni-nombre').value.trim();
+  const unidad       = document.getElementById('ni-unidad').value.trim();
+  const ubicacion    = document.getElementById('ni-ubicacion').value.trim();
+  const instrucciones= document.getElementById('ni-instrucciones').value.trim();
+  if (!group_id||!nombre||!unidad) { toast('Llena sucursal, grupo, nombre y unidad'); return; }
+  const res = await api('addInsumo',{group_id,nombre,unidad,ubicacion,instrucciones,imagen_url:pendingImgs.item||''});
+  if (!res.ok) { toast(res.error||'Error'); return; }
+  const g = adminData.grupos.find(x=>String(x.id)===String(group_id));
+  if (!adminData.insumos) adminData.insumos=[];
+  adminData.insumos.push({id:res.id,group_id,nombre,unidad,ubicacion,imagen_url:pendingImgs.item||'',groupNombre:g?g.nombre:'',groupSucursal:g?g.sucursal:''});
+  ['ni-nombre','ni-unidad','ni-ubicacion','ni-instrucciones'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ni-grupo').value='';
+  document.getElementById('ni-sucursal').value='';
+  resetUpload('item');
+  renderItemsList(); toast('Insumo agregado ✓');
+}
+
+async function adminDelInsumo(id) {
+  await api('delInsumo',{id});
+  adminData.insumos = (adminData.insumos||[]).filter(i=>String(i.id)!==String(id));
+  renderItemsList();
+}
+
+async function renderItemsList() {
+  // Load insumos fresh if needed
+  if (!adminData.insumos || !adminData.insumos.length) {
+    const res = await api('getInsumos',{});
+    adminData.insumos = res.ok ? res.insumos : [];
+    // Enrich with group info
+    adminData.insumos.forEach(i=>{
+      const g=adminData.grupos.find(x=>String(x.id)===String(i.group_id));
+      if(g){i.groupNombre=g.nombre;i.groupSucursal=g.sucursal;}
+    });
+  }
+  const list = document.getElementById('items-list');
+  list.innerHTML='';
+  SUCS.forEach(suc=>{
+    const gs = adminData.grupos.filter(g=>g.sucursal===suc);
+    let sucShown=false;
+    gs.forEach(g=>{
+      const items=(adminData.insumos||[]).filter(i=>String(i.group_id)===String(g.id));
+      if(!items.length) return;
+      if(!sucShown){ const st=document.createElement('div'); st.className='a-title'; st.style.color='var(--accent)'; st.textContent='Sucursal '+suc; list.appendChild(st); sucShown=true; }
+      const gt=document.createElement('div'); gt.className='a-title'; gt.style.cssText='font-size:11px;color:var(--text-muted);margin-bottom:5px;font-weight:500;'; gt.textContent=g.nombre; list.appendChild(gt);
+      items.forEach(item=>{
+        const card=document.createElement('div'); card.className='a-card';
+        const thumb=item.imagen_url
+          ?`<img src="${item.imagen_url}" style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;" />`
+          :`<div style="width:30px;height:30px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">📦</div>`;
+        card.innerHTML=`${thumb}
+          <div class="a-card-info">
+            <div class="a-card-name">${item.nombre}</div>
+            <div class="a-card-sub">${item.unidad} · ${item.ubicacion||'Sin ubicación'}</div>
+          </div>
+          <button class="btn-del" onclick="adminDelInsumo('${item.id}')">Eliminar</button>`;
+        list.appendChild(card);
+      });
+    });
+  });
+}
+
+// REGISTROS
+async function loadAndRenderRecords() {
+  const list = document.getElementById('records-list');
+  list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">Cargando registros...</div>';
+  const res = await api('getRegistros', { sucursal: recFilter==='Todas'?'':recFilter });
+  const registros = res.ok ? res.registros : [];
+  list.innerHTML='';
+  if (!registros.length) { list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">No hay registros aún.</div>'; return; }
+  registros.forEach(r=>{
+    const items = Array.isArray(r.items)?r.items:[];
+    const card=document.createElement('div'); card.className='rec-card';
+    card.innerHTML=`
+      <div class="rec-top">
+        <div><div class="rec-group">${r.group_nombre||r.groupNombre||'—'}</div><div class="rec-dt">📅 ${r.datetime}</div></div>
+        <span class="rec-suc">${r.sucursal}</span>
+      </div>
+      <div class="rec-meta">Colaborador: <span>${r.colaborador}</span> &nbsp;·&nbsp; Área: <span>${r.area}</span></div>
+      <div class="rec-items">${items.map(i=>`<div class="rec-pill">${i.nombre}: <strong>${i.cantidad} ${i.unidad}</strong></div>`).join('')}</div>`;
+    list.appendChild(card);
+  });
+}
+
+function setRecFilter(suc) {
+  recFilter=suc;
+  document.querySelectorAll('#rec-filter .rec-chip').forEach(c=>c.classList.toggle('active',c.textContent===suc));
+  loadAndRenderRecords();
+}
+
+// ── INIT ───────────────────────────────────────────
+window.addEventListener('load', () => {
+  setTimeout(()=>{
+    document.getElementById('loader').style.display='none';
+    show('login');
+  }, 1200);
+});
+
+// Enter key en login
+document.addEventListener('keydown', e=>{
+  if (e.key==='Enter' && document.getElementById('screen-login').classList.contains('active')) doLogin();
+});
+</script>
+
+<!-- SERVICE WORKER REGISTRATION -->
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
