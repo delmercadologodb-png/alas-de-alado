@@ -46,7 +46,7 @@
     .field-input:focus { border-color: var(--accent); }
     .btn-primary { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 14px; font-family: var(--font-title); font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; transition: transform 0.1s, opacity 0.15s; }
     .btn-primary:active { transform: scale(0.97); }
-    .btn-primary:disabled { opacity: 0.6; }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
     .login-err { font-size: 13px; color: var(--accent); text-align: center; display: none; font-weight: 500; }
 
     /* TOPBAR */
@@ -74,8 +74,8 @@
     .groups-grid { display: flex; flex-direction: column; gap: 9px; }
     .group-card { background: var(--surface); border-radius: var(--radius); padding: 14px 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s; }
     .group-card.available { border-color: var(--green-border); background: var(--green-bg); }
-    .group-card.done { border-color: var(--red-border); background: var(--red-bg); opacity: 0.8; cursor: default; }
-    .group-card.en-proceso { border-color: #FCD34D; background: #FFFBEB; opacity: 0.92; cursor: default; }
+    .group-card.done { border-color: var(--red-border); background: var(--red-bg); opacity: 0.8; cursor: not-allowed; }
+    .group-card.en-proceso { border-color: #FCD34D; background: #FFFBEB; opacity: 0.92; cursor: not-allowed; }
     .group-thumb { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; overflow: hidden; }
     .group-card.available .group-thumb { background: #d0f5f1; }
     .group-card.done .group-thumb { background: #fee2e2; }
@@ -89,7 +89,7 @@
     .badge-green { background: var(--green); color: #fff; }
     .badge-red { background: var(--red); color: #fff; }
 
-    /* COUNT — sticky header + layout responsive */
+    /* COUNT */
     .count-sticky { position: sticky; top: 0; z-index: 10; }
     .count-topbar { background: var(--brand); padding: 13px 16px; display: flex; align-items: center; gap: 10px; }
     .btn-back { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 22px; cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0; }
@@ -161,6 +161,7 @@
     .a-input:focus { border-color: var(--accent); }
     .a-select { width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-body); font-size: 13px; color: var(--text); background: var(--surface2); outline: none; }
     .btn-add { background: var(--brand); color: #fff; border: none; border-radius: 8px; padding: 11px; font-family: var(--font-title); font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
     .a-card { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; border: 1.5px solid var(--border); display: flex; align-items: center; gap: 10px; }
     .a-card-info { flex: 1; min-width: 0; }
     .a-card-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -285,8 +286,8 @@
       <div class="summary-meta" id="summary-meta"></div>
       <div class="a-title">Cantidades registradas</div>
       <div class="summary-table" id="summary-table"></div>
-      <button class="btn-secondary" onclick="show('count')">&#8592; Regresar a editar</button>
-      <button class="btn-primary" id="btn-guardar" onclick="submitCount()">Confirmar y Guardar en Google Sheets</button>
+      <button class="btn-secondary" onclick="goBack()">&#8592; Regresar a editar</button>
+      <button class="btn-primary" id="btn-guardar" onclick="submitCount()">Confirmar y Guardar</button>
     </div>
   </div>
 
@@ -295,7 +296,7 @@
     <div class="success-wrap">
       <div class="success-icon">&#10003;</div>
       <div class="success-title">¡Guardado!</div>
-      <div class="success-sub">El inventario fue registrado exitosamente.<br>Los datos ya están disponibles en Google Sheets.</div>
+      <div class="success-sub">El inventario fue registrado exitosamente.<br>Los datos ya están disponibles.</div>
       <button class="btn-primary" style="max-width:200px;" onclick="goHome()">Volver al inicio</button>
     </div>
   </div>
@@ -368,8 +369,8 @@
             <option>Centro</option><option>Cibeles</option><option>Río Mayo</option>
           </select>
           <select class="a-select" id="ni-grupo"><option value="">Selecciona grupo</option></select>
-          <input class="a-input" id="ni-nombre" placeholder="Nombre del insumo" />
-          <input class="a-input" id="ni-unidad" placeholder="Unidad (ej. piezas, kg, litros)" />
+          <input class="a-input" id="ni-nombre" placeholder="Nombre del insumo *" />
+          <input class="a-input" id="ni-unidad" placeholder="Unidad (ej. piezas, kg, litros) *" />
           <input class="a-input" id="ni-ubicacion" placeholder="Ubicación en anaquel" />
           <textarea class="a-input" id="ni-instrucciones" placeholder="Instrucciones de conteo..." rows="2"></textarea>
           <div>
@@ -416,8 +417,7 @@
 
 <script>
 // ── CONFIG ─────────────────────────────────────────
-// IMPORTANTE: Reemplaza esta URL con la de tu Google Apps Script desplegado
-const API_URL = "https://script.google.com/macros/s/AKfycbyQreJJTEZFJdIx2kDNPxvkA6_71pP298vtZzn1BXcPI3534HpI5moaL6xmlRMlU0De/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyQreJJTEZFJdIx2kDNPxvkA6_71pP298vtZzn1BXcPI3534HpI5moaL6xmlRMlU0De/exec"; // Reemplaza con tu URL
 
 // ── HELPERS ────────────────────────────────────────
 const DAYS   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -442,8 +442,13 @@ async function api(action, data={}) {
     params.set(key, typeof val === 'object' ? JSON.stringify(val) : val);
   }
   const url = API_URL + "?" + params.toString();
-  const res = await fetch(url, { redirect: "follow" });
-  return res.json();
+  try {
+    const res = await fetch(url, { redirect: "follow" });
+    return await res.json();
+  } catch (e) {
+    console.error('API Error:', e);
+    return { ok: false, error: 'Error de conexión' };
+  }
 }
 
 function show(id) {
@@ -551,7 +556,7 @@ function logout() {
   show('login');
 }
 
-// ── HOME ───────────────────────────────────────────
+// ── HOME ───────────────────────────────────
 async function loadHomeData() {
   try {
     const [gRes, doneRes, epRes] = await Promise.all([
@@ -559,14 +564,23 @@ async function loadHomeData() {
       api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: todayISO() }),
       api('getEnProceso', { sucursal: currentUser.sucursal }).catch(() => ({ ok: false }))
     ]);
+    
     localGroups = gRes.ok ? gRes.grupos : [];
+    
+    // Guardar IDs de grupos terminados
     window._doneIds = new Set(doneRes.ok ? doneRes.doneIds.map(String) : []);
+    
+    // Guardar información detallada de grupos terminados
+    window._doneGroups = doneRes.ok ? doneRes.doneGroups || [] : [];
+    
+    // Grupos en proceso
     window._enProceso = {};
     if (epRes && epRes.ok && epRes.enProceso) {
       epRes.enProceso.forEach(r => {
         window._enProceso[String(r.group_id)] = r.colaborador;
       });
     }
+    
   } catch(e) {
     console.error('loadHomeData error:', e);
     localGroups = localGroups || [];
@@ -590,27 +604,38 @@ function renderHome() {
     grid.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:12px 0;">No hay grupos asignados para esta sucursal.</div>';
     return;
   }
+  
   localGroups.forEach(g => {
-    const done = window._doneIds.has(String(g.id));
-    const enProcesoUser = window._enProceso && window._enProceso[String(g.id)];
+    const groupId = String(g.id);
+    const done = window._doneIds.has(groupId);
+    const enProcesoUser = window._enProceso && window._enProceso[groupId];
     const esMio = enProcesoUser === currentUser.nombre;
     const bloqueado = !done && enProcesoUser && !esMio;
+    
     let estado = done ? 'done' : (bloqueado ? 'en-proceso' : 'available');
+    
     const card = document.createElement('div');
     card.className = 'group-card ' + estado;
+    
     const thumb = g.imagen_url
       ? `<div class="group-thumb"><img src="${g.imagen_url}" /></div>`
       : `<div class="group-thumb">📦</div>`;
+    
     let badgeClass = done ? 'badge-red' : (bloqueado ? 'badge-yellow' : 'badge-green');
-    let badgeText  = done ? 'Terminado' : (bloqueado ? 'En proceso' : 'Disponible');
+    let badgeText  = done ? 'TERMINADO' : (bloqueado ? 'EN PROCESO' : 'DISPONIBLE');
     let subText    = bloqueado ? `Contando: ${enProcesoUser}` : g.sucursal;
+    
     card.innerHTML = `${thumb}
       <div class="group-info">
         <div class="group-name">${g.nombre}</div>
         <div class="group-sub">${subText}</div>
       </div>
       <div class="group-badge ${badgeClass}">${badgeText}</div>`;
-    if (!done && !bloqueado) card.onclick = () => startCounting(g);
+    
+    if (!done && !bloqueado) {
+      card.onclick = () => startCounting(g);
+    }
+    
     grid.appendChild(card);
   });
 }
@@ -621,44 +646,88 @@ function goHome() {
   startAutoRefresh();
 }
 
+// Auto-refresh mejorado
 let _autoRefreshTimer = null;
 function startAutoRefresh() {
   stopAutoRefresh();
-  _autoRefreshTimer = setInterval(() => {
+  _autoRefreshTimer = setInterval(async () => {
     const homeActive = document.getElementById('screen-home').classList.contains('active');
     if (homeActive && currentUser) {
-      loadHomeData().then(() => renderHome());
+      await loadHomeData();
+      renderHome();
     } else {
       stopAutoRefresh();
     }
-  }, 20000); // refresca cada 20 segundos
+  }, 15000); // 15 segundos
 }
 function stopAutoRefresh() {
   if (_autoRefreshTimer) { clearInterval(_autoRefreshTimer); _autoRefreshTimer = null; }
 }
 
-// ── COUNTING ───────────────────────────────────────
+// Verificación periódica de estados
+setInterval(async () => {
+  if (currentUser && currentUser.role !== 'admin') {
+    await checkTodayStatus();
+  }
+}, 30000);
+
+async function checkTodayStatus() {
+  if (!currentUser || currentUser.role === 'admin') return;
+  
+  const res = await api('getDoneGroups', { 
+    sucursal: currentUser.sucursal, 
+    fecha: todayISO() 
+  });
+  
+  if (res.ok) {
+    window._doneIds = new Set(res.doneIds.map(String));
+    if (document.getElementById('screen-home').classList.contains('active')) {
+      renderHome();
+    }
+  }
+}
+
+// ── COUNTING ─────────────────────────────
 let currentGroup = null;
 let counts = {};
 
 async function startCounting(group) {
+  // Verificar si ya está terminado HOY
+  if (window._doneIds.has(String(group.id))) {
+    toast('❌ Este grupo ya tiene un inventario registrado hoy');
+    return;
+  }
+  
   stopAutoRefresh();
+  
   // Registrar en Apps Script que estamos contando este grupo
   const lockRes = await api('startConteo', {
     group_id: group.id,
     sucursal: currentUser.sucursal,
     colaborador: currentUser.nombre
   });
+  
   if (!lockRes.ok) {
-    toast('Este grupo ya lo está contando: ' + (lockRes.colaborador || 'otro usuario'));
-    await loadHomeData(); renderHome();
+    toast('⚠️ Este grupo ya lo está contando: ' + (lockRes.colaborador || 'otro usuario'));
+    await loadHomeData(); 
+    renderHome();
     return;
   }
+  
   currentGroup = group;
   counts = {};
   document.getElementById('count-group-name').textContent = group.nombre;
+  
+  // Mostrar indicador de carga
+  document.getElementById('count-body').innerHTML = '<div style="text-align:center;padding:40px;">Cargando insumos...</div>';
+  
   const res = await api('getInsumos', { group_id: group.id });
   localItems[group.id] = res.ok ? res.insumos : [];
+  
+  if (localItems[group.id].length === 0) {
+    toast('⚠️ Este grupo no tiene insumos asignados');
+  }
+  
   renderCountItems();
   show('count');
 }
@@ -766,7 +835,7 @@ function goToSummary() {
 }
 
 async function submitCount() {
-  setLoading('btn-guardar',true,'Confirmar y Guardar en Google Sheets');
+  setLoading('btn-guardar',true,'Confirmar y Guardar');
   const items = localItems[currentGroup.id]||[];
   const payload = {
     group_id: currentGroup.id,
@@ -782,9 +851,13 @@ async function submitCount() {
       // Liberar bloqueo al terminar correctamente
       await api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
       show('success');
-    } else { toast('Error al guardar: '+res.error); }
-  } catch(e) { toast('Error de conexión.'); }
-  setLoading('btn-guardar',false,'Confirmar y Guardar en Google Sheets');
+    } else { 
+      toast('❌ Error: '+ (res.error || 'No se pudo guardar')); 
+    }
+  } catch(e) { 
+    toast('❌ Error de conexión.'); 
+  }
+  setLoading('btn-guardar',false,'Confirmar y Guardar');
 }
 
 // ── INFO OVERLAY ───────────────────────────────────
@@ -819,6 +892,7 @@ function switchTab(tab) {
   document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
   if (tab==='registros') loadAndRenderRecords();
+  if (tab==='insumos') loadInsumosList();
 }
 
 // USUARIOS
@@ -829,19 +903,34 @@ async function adminAddUsuario() {
   const username = document.getElementById('nu-user').value.trim();
   const password = document.getElementById('nu-pass').value.trim();
   if (!nombre||!sucursal||!area||!username||!password) { toast('Llena todos los campos'); return; }
+  
+  const btn = document.querySelector('#panel-usuarios .btn-add');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  
   const res = await api('addUsuario',{nombre,sucursal,area,username,password});
-  if (!res.ok) { toast(res.error||'Error'); return; }
+  if (!res.ok) { 
+    toast(res.error||'Error'); 
+    btn.disabled = false;
+    btn.textContent = '+ Agregar colaborador';
+    return; 
+  }
   adminData.usuarios.push({id:res.id,nombre,sucursal,area,username});
   ['nu-nombre','nu-user','nu-pass'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('nu-sucursal').value='';
   document.getElementById('nu-area').value='';
-  renderUsersList(); toast('Colaborador agregado ✓');
+  renderUsersList(); 
+  toast('✅ Colaborador agregado');
+  
+  btn.disabled = false;
+  btn.textContent = '+ Agregar colaborador';
 }
 
 async function adminDelUsuario(id) {
   await api('delUsuario',{id});
   adminData.usuarios = adminData.usuarios.filter(u=>String(u.id)!==String(id));
   renderUsersList();
+  toast('✅ Usuario eliminado');
 }
 
 function renderUsersList() {
@@ -867,19 +956,34 @@ async function adminAddGrupo() {
   const nombre   = document.getElementById('ng-nombre').value.trim();
   const sucursal = document.getElementById('ng-sucursal').value;
   if (!nombre||!sucursal) { toast('Llena nombre y sucursal'); return; }
+  
+  const btn = document.querySelector('#panel-grupos .btn-add');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  
   const res = await api('addGrupo',{nombre,sucursal,imagen_url:pendingImgs.group||''});
-  if (!res.ok) { toast(res.error||'Error'); return; }
+  if (!res.ok) { 
+    toast(res.error||'Error'); 
+    btn.disabled = false;
+    btn.textContent = '+ Agregar grupo';
+    return; 
+  }
   adminData.grupos.push({id:res.id,nombre,sucursal,imagen_url:pendingImgs.group||''});
   document.getElementById('ng-nombre').value='';
   document.getElementById('ng-sucursal').value='';
   resetUpload('group');
-  renderGroupsList(); toast('Grupo agregado ✓');
+  renderGroupsList(); 
+  toast('✅ Grupo agregado');
+  
+  btn.disabled = false;
+  btn.textContent = '+ Agregar grupo';
 }
 
 async function adminDelGrupo(id) {
   await api('delGrupo',{id});
   adminData.grupos = adminData.grupos.filter(g=>String(g.id)!==String(id));
   renderGroupsList(); renderItemsList();
+  toast('✅ Grupo eliminado');
 }
 
 function renderGroupsList() {
@@ -916,61 +1020,131 @@ function filterGroupsForInsumo() {
 }
 
 async function adminAddInsumo() {
-  const group_id     = document.getElementById('ni-grupo').value;
-  const nombre       = document.getElementById('ni-nombre').value.trim();
-  const unidad       = document.getElementById('ni-unidad').value.trim();
-  const ubicacion    = document.getElementById('ni-ubicacion').value.trim();
-  const instrucciones= document.getElementById('ni-instrucciones').value.trim();
-  if (!group_id||!nombre||!unidad) { toast('Llena sucursal, grupo, nombre y unidad'); return; }
-  const res = await api('addInsumo',{group_id,nombre,unidad,ubicacion,instrucciones,imagen_url:pendingImgs.item||''});
-  if (!res.ok) { toast(res.error||'Error'); return; }
-  const g = adminData.grupos.find(x=>String(x.id)===String(group_id));
-  if (!adminData.insumos) adminData.insumos=[];
-  adminData.insumos.push({id:res.id,group_id,nombre,unidad,ubicacion,imagen_url:pendingImgs.item||'',groupNombre:g?g.nombre:'',groupSucursal:g?g.sucursal:''});
-  ['ni-nombre','ni-unidad','ni-ubicacion','ni-instrucciones'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('ni-grupo').value='';
-  document.getElementById('ni-sucursal').value='';
-  resetUpload('item');
-  renderItemsList(); toast('Insumo agregado ✓');
+  const group_id = document.getElementById('ni-grupo').value;
+  const nombre = document.getElementById('ni-nombre').value.trim();
+  const unidad = document.getElementById('ni-unidad').value.trim();
+  const ubicacion = document.getElementById('ni-ubicacion').value.trim();
+  const instrucciones = document.getElementById('ni-instrucciones').value.trim();
+  
+  if (!group_id || !nombre || !unidad) { 
+    toast('❌ Llena todos los campos obligatorios (*)'); 
+    return; 
+  }
+  
+  // Deshabilitar botón mientras se guarda
+  const btn = document.querySelector('#panel-insumos .btn-add');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  
+  try {
+    const res = await api('addInsumo', {
+      group_id,
+      nombre,
+      unidad,
+      ubicacion: ubicacion || '',
+      instrucciones: instrucciones || '',
+      imagen_url: pendingImgs.item || ''
+    });
+    
+    if (!res.ok) {
+      toast('❌ Error: ' + (res.error || 'No se pudo guardar'));
+      return;
+    }
+    
+    // ✅ Mostrar mensaje de éxito
+    toast('✅ Insumo agregado correctamente');
+    
+    // Limpiar formulario
+    document.getElementById('ni-nombre').value = '';
+    document.getElementById('ni-unidad').value = '';
+    document.getElementById('ni-ubicacion').value = '';
+    document.getElementById('ni-instrucciones').value = '';
+    document.getElementById('ni-grupo').value = '';
+    document.getElementById('ni-sucursal').value = '';
+    resetUpload('item');
+    
+    // Recargar la lista de insumos para mostrar el nuevo
+    await loadInsumosList();
+    
+  } catch (error) {
+    console.error('Error al guardar insumo:', error);
+    toast('❌ Error de conexión al guardar');
+  } finally {
+    // Restaurar botón
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+// Función nueva para cargar solo insumos
+async function loadInsumosList() {
+  const res = await api('getInsumos', {});
+  adminData.insumos = res.ok ? res.insumos : [];
+  
+  // Enriquecer con información del grupo
+  adminData.insumos.forEach(i => {
+    const g = adminData.grupos.find(x => String(x.id) === String(i.group_id));
+    if (g) {
+      i.groupNombre = g.nombre;
+      i.groupSucursal = g.sucursal;
+    }
+  });
+  
+  renderItemsList();
 }
 
 async function adminDelInsumo(id) {
   await api('delInsumo',{id});
   adminData.insumos = (adminData.insumos||[]).filter(i=>String(i.id)!==String(id));
   renderItemsList();
+  toast('✅ Insumo eliminado');
 }
 
-async function renderItemsList() {
-  // Siempre recargar para mostrar cambios recientes
-  adminData.insumos = null;
-  if (!adminData.insumos || !adminData.insumos.length) {
-    const res = await api('getInsumos',{});
-    adminData.insumos = res.ok ? res.insumos : [];
-    // Enrich with group info
-    adminData.insumos.forEach(i=>{
-      const g=adminData.grupos.find(x=>String(x.id)===String(i.group_id));
-      if(g){i.groupNombre=g.nombre;i.groupSucursal=g.sucursal;}
-    });
-  }
+function renderItemsList() {
   const list = document.getElementById('items-list');
-  list.innerHTML='';
-  SUCS.forEach(suc=>{
-    const gs = adminData.grupos.filter(g=>g.sucursal===suc);
-    let sucShown=false;
-    gs.forEach(g=>{
-      const items=(adminData.insumos||[]).filter(i=>String(i.group_id)===String(g.id));
-      if(!items.length) return;
-      if(!sucShown){ const st=document.createElement('div'); st.className='a-title'; st.style.color='var(--accent)'; st.textContent='Sucursal '+suc; list.appendChild(st); sucShown=true; }
-      const gt=document.createElement('div'); gt.className='a-title'; gt.style.cssText='font-size:11px;color:var(--text-muted);margin-bottom:5px;font-weight:500;'; gt.textContent=g.nombre; list.appendChild(gt);
-      items.forEach(item=>{
-        const card=document.createElement('div'); card.className='a-card';
-        const thumb=item.imagen_url
-          ?`<img src="${item.imagen_url}" style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;" />`
-          :`<div style="width:30px;height:30px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">📦</div>`;
-        card.innerHTML=`${thumb}
+  list.innerHTML = '';
+  
+  if (!adminData.insumos || adminData.insumos.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">No hay insumos aún.</div>';
+    return;
+  }
+  
+  // Agrupar por sucursal y grupo
+  const porSucursal = {};
+  adminData.insumos.forEach(item => {
+    const suc = item.groupSucursal || 'Sin sucursal';
+    if (!porSucursal[suc]) porSucursal[suc] = {};
+    const grupo = item.groupNombre || 'Sin grupo';
+    if (!porSucursal[suc][grupo]) porSucursal[suc][grupo] = [];
+    porSucursal[suc][grupo].push(item);
+  });
+  
+  // Renderizar organizado
+  Object.keys(porSucursal).sort().forEach(suc => {
+    const sucHeader = document.createElement('div');
+    sucHeader.className = 'a-title';
+    sucHeader.style.color = 'var(--accent)';
+    sucHeader.textContent = `Sucursal ${suc}`;
+    list.appendChild(sucHeader);
+    
+    Object.keys(porSucursal[suc]).sort().forEach(grupo => {
+      const grupoHeader = document.createElement('div');
+      grupoHeader.className = 'a-title';
+      grupoHeader.style.cssText = 'font-size:11px;color:var(--text-muted);margin-bottom:5px;font-weight:500;';
+      grupoHeader.textContent = grupo;
+      list.appendChild(grupoHeader);
+      
+      porSucursal[suc][grupo].forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'a-card';
+        const thumb = item.imagen_url
+          ? `<img src="${item.imagen_url}" style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;" />`
+          : `<div style="width:30px;height:30px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">📦</div>`;
+        card.innerHTML = `${thumb}
           <div class="a-card-info">
             <div class="a-card-name">${item.nombre}</div>
-            <div class="a-card-sub">${item.unidad} · ${item.ubicacion||'Sin ubicación'}</div>
+            <div class="a-card-sub">${item.unidad} · ${item.ubicacion || 'Sin ubicación'}</div>
           </div>
           <button class="btn-del" onclick="adminDelInsumo('${item.id}')">Eliminar</button>`;
         list.appendChild(card);
