@@ -533,6 +533,7 @@ async function doLogin() {
         await loadHomeData();
         renderHome();
         show('home');
+        startAutoRefresh();
       }
     }
   } catch(e) {
@@ -542,6 +543,7 @@ async function doLogin() {
 }
 
 function logout() {
+  stopAutoRefresh();
   currentUser = null;
   localGroups = []; localItems = {};
   document.getElementById('inp-user').value='';
@@ -616,6 +618,23 @@ function renderHome() {
 function goHome() {
   currentGroup = null;
   loadHomeData().then(() => { renderHome(); show('home'); });
+  startAutoRefresh();
+}
+
+let _autoRefreshTimer = null;
+function startAutoRefresh() {
+  stopAutoRefresh();
+  _autoRefreshTimer = setInterval(() => {
+    const homeActive = document.getElementById('screen-home').classList.contains('active');
+    if (homeActive && currentUser) {
+      loadHomeData().then(() => renderHome());
+    } else {
+      stopAutoRefresh();
+    }
+  }, 20000); // refresca cada 20 segundos
+}
+function stopAutoRefresh() {
+  if (_autoRefreshTimer) { clearInterval(_autoRefreshTimer); _autoRefreshTimer = null; }
 }
 
 // ── COUNTING ───────────────────────────────────────
@@ -623,6 +642,7 @@ let currentGroup = null;
 let counts = {};
 
 async function startCounting(group) {
+  stopAutoRefresh();
   // Registrar en Apps Script que estamos contando este grupo
   const lockRes = await api('startConteo', {
     group_id: group.id,
