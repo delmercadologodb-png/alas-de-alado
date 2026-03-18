@@ -1,4 +1,4 @@
-const CACHE = 'alas-de-alado-v6';
+const CACHE = 'alas-de-alado-v7'; // Incrementa la versión para activar el nuevo cache
 const BASE = '/alas-de-alado';
 const ASSETS = [
   BASE + '/',
@@ -23,18 +23,50 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('script.google.com')) return;
-  if (e.request.url.includes('fonts.googleapis.com') || e.request.url.includes('fonts.gstatic.com')) return;
-  if (e.request.url.endsWith('.html') || e.request.url.endsWith('/')) {
+  const url = e.request.url;
+  
+  // No cachear llamadas a la API - Siempre ir a la red
+  if (url.includes('script.google.com')) {
     e.respondWith(
-      fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return res;
-      }).catch(() => caches.match(e.request))
+      fetch(e.request)
+        .then(response => response)
+        .catch(() => {
+          // Si no hay red, devolver un error amigable
+          return new Response(JSON.stringify({ 
+            ok: false, 
+            error: 'offline',
+            message: 'Sin conexión a internet'
+          }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        })
     );
     return;
   }
+  
+  // No cachear fuentes de Google (ya están en el navegador)
+  if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
+  
+  // Para archivos HTML: estrategia network-first con fallback a cache
+  if (url.endsWith('.html') || url === BASE + '/' || url === BASE) {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          // Actualizar cache con la nueva versión
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+  
+  // Para assets estáticos (imágenes, manifest, etc): cache-first
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
