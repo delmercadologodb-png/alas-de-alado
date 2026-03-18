@@ -442,12 +442,32 @@ async function api(action, data={}) {
     params.set(key, typeof val === 'object' ? JSON.stringify(val) : val);
   }
   const url = API_URL + "?" + params.toString();
+  
+  console.log('📡 Llamando a API:', url);
+  
   try {
-    const res = await fetch(url, { redirect: "follow" });
-    return await res.json();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
+    const res = await fetch(url, { 
+      signal: controller.signal,
+      mode: 'cors',
+      cache: 'no-store'
+    });
+    
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    console.log('📦 Respuesta API:', data);
+    return data;
+    
   } catch (e) {
-    console.error('API Error:', e);
-    return { ok: false, error: 'Error de conexión' };
+    console.error('❌ Error en API:', e);
+    
+    if (e.name === 'AbortError') {
+      return { ok: false, error: 'timeout', message: 'La solicitud tardó demasiado' };
+    }
+    
+    return { ok: false, error: 'offline', message: 'Error de conexión' };
   }
 }
 
@@ -518,6 +538,8 @@ function resetUpload(type) {
 let currentUser = null;
 let localGroups = [];
 let localItems  = {};
+window._doneIds = new Set();
+window._enProceso = {};
 
 async function doLogin() {
   const username = document.getElementById('inp-user').value.trim();
@@ -551,6 +573,8 @@ function logout() {
   stopAutoRefresh();
   currentUser = null;
   localGroups = []; localItems = {};
+  window._doneIds = new Set();
+  window._enProceso = {};
   document.getElementById('inp-user').value='';
   document.getElementById('inp-pass').value='';
   show('login');
@@ -559,21 +583,24 @@ function logout() {
 // ── HOME ───────────────────────────────────
 async function loadHomeData() {
   try {
+    console.log('🔍 Cargando datos home para sucursal:', currentUser?.sucursal);
+    
     const [gRes, doneRes, epRes] = await Promise.all([
       api('getGrupos', { sucursal: currentUser.sucursal }),
       api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: todayISO() }),
       api('getEnProceso', { sucursal: currentUser.sucursal }).catch(() => ({ ok: false }))
     ]);
     
+    console.log('📦 Grupos recibidos:', gRes);
+    console.log('✅ Grupos terminados recibidos:', doneRes);
+    
     localGroups = gRes.ok ? gRes.grupos : [];
     
-    // Guardar IDs de grupos terminados
-    window._doneIds = new Set(doneRes.ok ? doneRes.doneIds.map(String) : []);
+    if (doneRes.ok) {
+      window._doneIds = new Set(doneRes.doneIds.map(String));
+      console.log('🎯 IDs terminados ACTUALIZADOS:', Array.from(window._doneIds));
+    }
     
-    // Guardar información detallada de grupos terminados
-    window._doneGroups = doneRes.ok ? doneRes.doneGroups || [] : [];
-    
-    // Grupos en proceso
     window._enProceso = {};
     if (epRes && epRes.ok && epRes.enProceso) {
       epRes.enProceso.forEach(r => {
@@ -582,10 +609,7 @@ async function loadHomeData() {
     }
     
   } catch(e) {
-    console.error('loadHomeData error:', e);
-    localGroups = localGroups || [];
-    window._doneIds = window._doneIds || new Set();
-    window._enProceso = window._enProceso || {};
+    console.error('❌ Error en loadHomeData:', e);
   }
 }
 
@@ -600,14 +624,17 @@ function renderHome() {
 
   const grid = document.getElementById('groups-grid');
   grid.innerHTML = '';
+  
   if (!localGroups.length) {
     grid.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:12px 0;">No hay grupos asignados para esta sucursal.</div>';
     return;
   }
   
+  console.log('🎨 Renderizando home con _doneIds:', Array.from(window._doneIds || []));
+  
   localGroups.forEach(g => {
     const groupId = String(g.id);
-    const done = window._doneIds.has(groupId);
+    const done = window._doneIds && window._doneIds.has(groupId);
     const enProcesoUser = window._enProceso && window._enProceso[groupId];
     const esMio = enProcesoUser === currentUser.nombre;
     const bloqueado = !done && enProcesoUser && !esMio;
@@ -641,12 +668,16 @@ function renderHome() {
 }
 
 function goHome() {
+  console.log('🏠 Volviendo a home, recargando datos...');
   currentGroup = null;
-  loadHomeData().then(() => { renderHome(); show('home'); });
-  startAutoRefresh();
+  loadHomeData().then(() => { 
+    renderHome(); 
+    show('home');
+    startAutoRefresh();
+  });
 }
 
-// Auto-refresh mejorado
+// Auto-refresh
 let _autoRefreshTimer = null;
 function startAutoRefresh() {
   stopAutoRefresh();
@@ -658,33 +689,10 @@ function startAutoRefresh() {
     } else {
       stopAutoRefresh();
     }
-  }, 15000); // 15 segundos
+  }, 5000);
 }
 function stopAutoRefresh() {
   if (_autoRefreshTimer) { clearInterval(_autoRefreshTimer); _autoRefreshTimer = null; }
-}
-
-// Verificación periódica de estados
-setInterval(async () => {
-  if (currentUser && currentUser.role !== 'admin') {
-    await checkTodayStatus();
-  }
-}, 30000);
-
-async function checkTodayStatus() {
-  if (!currentUser || currentUser.role === 'admin') return;
-  
-  const res = await api('getDoneGroups', { 
-    sucursal: currentUser.sucursal, 
-    fecha: todayISO() 
-  });
-  
-  if (res.ok) {
-    window._doneIds = new Set(res.doneIds.map(String));
-    if (document.getElementById('screen-home').classList.contains('active')) {
-      renderHome();
-    }
-  }
 }
 
 // ── COUNTING ─────────────────────────────
@@ -692,15 +700,16 @@ let currentGroup = null;
 let counts = {};
 
 async function startCounting(group) {
-  // Verificar si ya está terminado HOY
+  console.log('🚀 Intentando iniciar conteo:', group.id, group.nombre);
+  
   if (window._doneIds.has(String(group.id))) {
+    console.log('❌ Grupo ya terminado hoy');
     toast('❌ Este grupo ya tiene un inventario registrado hoy');
     return;
   }
   
   stopAutoRefresh();
   
-  // Registrar en Apps Script que estamos contando este grupo
   const lockRes = await api('startConteo', {
     group_id: group.id,
     sucursal: currentUser.sucursal,
@@ -717,16 +726,10 @@ async function startCounting(group) {
   currentGroup = group;
   counts = {};
   document.getElementById('count-group-name').textContent = group.nombre;
-  
-  // Mostrar indicador de carga
   document.getElementById('count-body').innerHTML = '<div style="text-align:center;padding:40px;">Cargando insumos...</div>';
   
   const res = await api('getInsumos', { group_id: group.id });
   localItems[group.id] = res.ok ? res.insumos : [];
-  
-  if (localItems[group.id].length === 0) {
-    toast('⚠️ Este grupo no tiene insumos asignados');
-  }
   
   renderCountItems();
   show('count');
@@ -808,7 +811,6 @@ function updateProgress(items) {
 }
 
 function goBack() {
-  // Liberar bloqueo al salir sin terminar
   if (currentGroup) {
     api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
   }
@@ -845,11 +847,17 @@ async function submitCount() {
     area: currentUser.area,
     items: items.map(i=>({ nombre:i.nombre, unidad:i.unidad, cantidad:counts[i.id]??0 }))
   };
+  
   try {
     const res = await api('saveConteo', payload);
     if (res.ok) {
-      // Liberar bloqueo al terminar correctamente
       await api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
+      
+      if (!window._doneIds) window._doneIds = new Set();
+      window._doneIds.add(String(currentGroup.id));
+      console.log('✅ Grupo marcado como terminado:', currentGroup.id);
+      console.log('✅ _doneIds actualizado:', Array.from(window._doneIds));
+      
       show('success');
     } else { 
       toast('❌ Error: '+ (res.error || 'No se pudo guardar')); 
@@ -1031,7 +1039,6 @@ async function adminAddInsumo() {
     return; 
   }
   
-  // Deshabilitar botón mientras se guarda
   const btn = document.querySelector('#panel-insumos .btn-add');
   const originalText = btn.textContent;
   btn.disabled = true;
@@ -1052,10 +1059,8 @@ async function adminAddInsumo() {
       return;
     }
     
-    // ✅ Mostrar mensaje de éxito
     toast('✅ Insumo agregado correctamente');
     
-    // Limpiar formulario
     document.getElementById('ni-nombre').value = '';
     document.getElementById('ni-unidad').value = '';
     document.getElementById('ni-ubicacion').value = '';
@@ -1064,25 +1069,21 @@ async function adminAddInsumo() {
     document.getElementById('ni-sucursal').value = '';
     resetUpload('item');
     
-    // Recargar la lista de insumos para mostrar el nuevo
     await loadInsumosList();
     
   } catch (error) {
     console.error('Error al guardar insumo:', error);
     toast('❌ Error de conexión al guardar');
   } finally {
-    // Restaurar botón
     btn.disabled = false;
     btn.textContent = originalText;
   }
 }
 
-// Función nueva para cargar solo insumos
 async function loadInsumosList() {
   const res = await api('getInsumos', {});
   adminData.insumos = res.ok ? res.insumos : [];
   
-  // Enriquecer con información del grupo
   adminData.insumos.forEach(i => {
     const g = adminData.grupos.find(x => String(x.id) === String(i.group_id));
     if (g) {
@@ -1110,7 +1111,6 @@ function renderItemsList() {
     return;
   }
   
-  // Agrupar por sucursal y grupo
   const porSucursal = {};
   adminData.insumos.forEach(item => {
     const suc = item.groupSucursal || 'Sin sucursal';
@@ -1120,7 +1120,6 @@ function renderItemsList() {
     porSucursal[suc][grupo].push(item);
   });
   
-  // Renderizar organizado
   Object.keys(porSucursal).sort().forEach(suc => {
     const sucHeader = document.createElement('div');
     sucHeader.className = 'a-title';
@@ -1189,7 +1188,6 @@ window.addEventListener('load', () => {
   }, 1200);
 });
 
-// Enter key en login
 document.addEventListener('keydown', e=>{
   if (e.key==='Enter' && document.getElementById('screen-login').classList.contains('active')) doLogin();
 });
