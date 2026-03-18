@@ -1,10 +1,11 @@
-const CACHE = 'alas-de-alado-v5';
+const CACHE = 'alas-de-alado-v6';
+const BASE = '/alas-de-alado';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/manifest.json',
+  BASE + '/icon-192.png',
+  BASE + '/icon-512.png'
 ];
 
 self.addEventListener('install', e => {
@@ -22,10 +23,8 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('script.google.com')) {
-    return;
-  }
-  // Network first para HTML — siempre descarga versión nueva
+  if (e.request.url.includes('script.google.com')) return;
+  if (e.request.url.includes('fonts.googleapis.com') || e.request.url.includes('fonts.gstatic.com')) return;
   if (e.request.url.endsWith('.html') || e.request.url.endsWith('/')) {
     e.respondWith(
       fetch(e.request).then(res => {
@@ -36,7 +35,6 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-  // Cache first para iconos y manifest
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
