@@ -101,8 +101,9 @@
     .progress-bar-bg { height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
     .progress-bar-fill { height: 100%; background: var(--accent2); border-radius: 3px; transition: width 0.4s; }
     .count-body { flex: 1; overflow-y: auto; padding: 12px; }
+
+    /* ITEM CARD */
     .item-card { background: var(--surface); border-radius: var(--radius); border: 1.5px solid var(--border); padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; width: 100%; box-sizing: border-box; }
-    .item-card.completed { border-color: var(--green-border); background: var(--green-bg); }
     .item-top { display: flex; gap: 12px; align-items: flex-start; width: 100%; }
     .item-image { width: 200px; height: 200px; min-width: 200px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; flex-shrink: 0; }
     .item-image img { width: 200px; height: 200px; object-fit: contain; }
@@ -115,8 +116,24 @@
     .btn-step { width: 44px; height: 44px; min-width: 44px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface2); font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text); }
     .count-input { flex: 1; min-width: 0; text-align: center; padding: 10px 4px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-title); font-size: 24px; font-weight: 700; color: var(--text); background: var(--surface2); outline: none; width: 100%; box-sizing: border-box; }
     .count-input:focus { border-color: var(--accent); }
-    .btn-check { width: 44px; height: 44px; min-width: 44px; border-radius: 8px; border: none; background: var(--brand); color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .item-confirmed { font-size: 12px; font-weight: 500; color: var(--accent2); }
+    
+    /* NUEVOS ESTILOS PARA ÁREAS */
+    .ubicacion-row { margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .ubicacion-row:last-of-type { border-bottom: none; }
+    .ubicacion-label { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.03em; }
+    .total-row { margin-top: 10px; padding-top: 8px; border-top: 2px solid var(--accent2); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-title); }
+    .total-label { font-size: 13px; font-weight: 700; color: var(--accent2); }
+    .total-value { font-size: 18px; font-weight: 800; color: var(--accent); background: var(--red-bg); padding: 4px 12px; border-radius: 20px; }
+    
+    /* MODAL CONFIRMACIÓN */
+    .modal-confirm { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; }
+    .modal-confirm.active { display: flex; }
+    .modal-content { background: var(--surface); border-radius: 20px; padding: 24px; width: 280px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    .modal-content p { margin-bottom: 20px; font-size: 16px; font-weight: 500; color: var(--text); }
+    .modal-buttons { display: flex; gap: 12px; }
+    .modal-buttons button { flex: 1; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; }
+    .modal-confirm-btn { background: var(--red); color: white; }
+    .modal-cancel-btn { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
 
     /* INFO SHEET */
     .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; justify-content: center; z-index: 100; }
@@ -137,7 +154,7 @@
     .summary-meta { background: var(--surface); border-radius: var(--radius); padding: 14px 15px; margin-bottom: 14px; border: 1.5px solid var(--border); font-size: 13px; color: var(--text-muted); line-height: 1.9; }
     .summary-meta strong { color: var(--text); font-weight: 600; }
     .summary-table { background: var(--surface); border-radius: var(--radius); overflow: hidden; border: 1.5px solid var(--border); margin-bottom: 16px; }
-    .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 14px; flex-wrap: wrap; gap: 8px; }
     .summary-row:last-child { border-bottom: none; }
     .summary-val { font-family: var(--font-title); font-weight: 700; }
     .btn-secondary { width: 100%; padding: 12px; background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); border-radius: 12px; font-family: var(--font-body); font-size: 14px; cursor: pointer; margin-bottom: 10px; }
@@ -286,7 +303,7 @@
       <div class="summary-meta" id="summary-meta"></div>
       <div class="a-title">Cantidades registradas</div>
       <div class="summary-table" id="summary-table"></div>
-      <button class="btn-secondary" onclick="goBack()">&#8592; Regresar a editar</button>
+      <button class="btn-secondary" onclick="goBackToEdit()">← Regresar a editar</button>
       <button class="btn-primary" id="btn-guardar" onclick="submitCount()">Confirmar y Guardar</button>
     </div>
   </div>
@@ -413,6 +430,17 @@
 
 </div>
 
+<!-- MODAL DE CONFIRMACIÓN -->
+<div id="modal-confirm" class="modal-confirm">
+  <div class="modal-content">
+    <p>⚠️ ¿Estás seguro que deseas cancelar tu conteo actual?</p>
+    <div class="modal-buttons">
+      <button class="modal-cancel-btn" onclick="hideConfirmModal()">Cancelar</button>
+      <button class="modal-confirm-btn" onclick="confirmGoBack()">Sí, cancelar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -443,8 +471,6 @@ async function api(action, data={}) {
   }
   const url = API_URL + "?" + params.toString();
   
-  console.log('📡 Llamando a API:', url);
-  
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -457,16 +483,13 @@ async function api(action, data={}) {
     
     clearTimeout(timeoutId);
     const data = await res.json();
-    console.log('📦 Respuesta API:', data);
     return data;
     
   } catch (e) {
-    console.error('❌ Error en API:', e);
-    
+    console.error('Error en API:', e);
     if (e.name === 'AbortError') {
       return { ok: false, error: 'timeout', message: 'La solicitud tardó demasiado' };
     }
-    
     return { ok: false, error: 'offline', message: 'Error de conexión' };
   }
 }
@@ -541,6 +564,11 @@ let localItems  = {};
 window._doneIds = new Set();
 window._enProceso = {};
 
+// Variables para control de cambios sin guardar
+let hasUnsavedChanges = false;
+let currentGroup = null;
+let counts = {};
+
 async function doLogin() {
   const username = document.getElementById('inp-user').value.trim();
   const password = document.getElementById('inp-pass').value.trim();
@@ -571,7 +599,10 @@ async function doLogin() {
 
 function logout() {
   stopAutoRefresh();
+  resetUnsavedChanges();
   currentUser = null;
+  currentGroup = null;
+  counts = {};
   localGroups = []; localItems = {};
   window._doneIds = new Set();
   window._enProceso = {};
@@ -580,25 +611,23 @@ function logout() {
   show('login');
 }
 
+function resetUnsavedChanges() {
+  hasUnsavedChanges = false;
+}
+
 // ── HOME ───────────────────────────────────
 async function loadHomeData() {
   try {
-    console.log('🔍 Cargando datos home para sucursal:', currentUser?.sucursal);
-    
     const [gRes, doneRes, epRes] = await Promise.all([
       api('getGrupos', { sucursal: currentUser.sucursal }),
       api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: todayISO() }),
       api('getEnProceso', { sucursal: currentUser.sucursal }).catch(() => ({ ok: false }))
     ]);
     
-    console.log('📦 Grupos recibidos:', gRes);
-    console.log('✅ Grupos terminados recibidos:', doneRes);
-    
     localGroups = gRes.ok ? gRes.grupos : [];
     
     if (doneRes.ok) {
       window._doneIds = new Set(doneRes.doneIds.map(String));
-      console.log('🎯 IDs terminados ACTUALIZADOS:', Array.from(window._doneIds));
     }
     
     window._enProceso = {};
@@ -609,7 +638,7 @@ async function loadHomeData() {
     }
     
   } catch(e) {
-    console.error('❌ Error en loadHomeData:', e);
+    console.error('loadHomeData error:', e);
   }
 }
 
@@ -629,8 +658,6 @@ function renderHome() {
     grid.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:12px 0;">No hay grupos asignados para esta sucursal.</div>';
     return;
   }
-  
-  console.log('🎨 Renderizando home con _doneIds:', Array.from(window._doneIds || []));
   
   localGroups.forEach(g => {
     const groupId = String(g.id);
@@ -668,8 +695,9 @@ function renderHome() {
 }
 
 function goHome() {
-  console.log('🏠 Volviendo a home, recargando datos...');
   currentGroup = null;
+  counts = {};
+  resetUnsavedChanges();
   loadHomeData().then(() => { 
     renderHome(); 
     show('home');
@@ -696,14 +724,8 @@ function stopAutoRefresh() {
 }
 
 // ── COUNTING ─────────────────────────────
-let currentGroup = null;
-let counts = {};
-
 async function startCounting(group) {
-  console.log('🚀 Intentando iniciar conteo:', group.id, group.nombre);
-  
   if (window._doneIds.has(String(group.id))) {
-    console.log('❌ Grupo ya terminado hoy');
     toast('❌ Este grupo ya tiene un inventario registrado hoy');
     return;
   }
@@ -725,6 +747,7 @@ async function startCounting(group) {
   
   currentGroup = group;
   counts = {};
+  resetUnsavedChanges();
   document.getElementById('count-group-name').textContent = group.nombre;
   document.getElementById('count-body').innerHTML = '<div style="text-align:center;padding:40px;">Cargando insumos...</div>';
   
@@ -740,15 +763,25 @@ function renderCountItems() {
   updateProgress(items);
   const body = document.getElementById('count-body');
   body.innerHTML = '';
+  
   items.forEach(item => {
-    const val = counts[item.id] !== undefined ? counts[item.id] : '';
-    const done = val !== '';
+    if (!counts[item.id]) {
+      counts[item.id] = { area1: 0, area2: 0, total: 0 };
+    }
+    
+    const valArea1 = counts[item.id].area1 !== undefined ? counts[item.id].area1 : '';
+    const valArea2 = counts[item.id].area2 !== undefined ? counts[item.id].area2 : '';
+    const total = (parseInt(valArea1) || 0) + (parseInt(valArea2) || 0);
+    counts[item.id].total = total;
+    
     const card = document.createElement('div');
-    card.className = 'item-card'+(done?' completed':'');
-    card.id = 'icard-'+item.id;
+    card.className = 'item-card';
+    card.id = 'icard-' + item.id;
+    
     const imgContent = item.imagen_url
       ? `<img src="${item.imagen_url}" />`
       : `<span class="item-fallback">📦</span>`;
+    
     card.innerHTML = `
       <div class="item-top">
         <div class="item-image">${imgContent}<button class="btn-info" onclick="showInfo(${item.id})">?</button></div>
@@ -757,95 +790,185 @@ function renderCountItems() {
           <div class="item-unit">Unidad: ${item.unidad}</div>
         </div>
       </div>
-      <div class="count-row">
-        <button class="btn-step" onclick="stepCount('${item.id}',-1)">−</button>
-        <input class="count-input" id="cinp-${item.id}" type="number" min="0" inputmode="numeric" pattern="[0-9]*" value="${val}" placeholder="0" oninput="updateCount('${item.id}')" />
-        <button class="btn-step" onclick="stepCount('${item.id}',1)">+</button>
-        <button class="btn-check" onclick="confirmItem('${item.id}')">&#10003;</button>
+      <div class="ubicacion-row">
+        <div class="ubicacion-label">📍 Área 1:</div>
+        <div class="count-row">
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', -1)">−</button>
+          <input class="count-input" id="cinp-${item.id}-area1" type="number" min="0" inputmode="numeric" value="${valArea1}" placeholder="0" oninput="updateCount('${item.id}', 'area1')" />
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', 1)">+</button>
+        </div>
       </div>
-      ${done?`<div class="item-confirmed">✓ Registrado: ${val} ${item.unidad}</div>`:''}`;
+      <div class="ubicacion-row">
+        <div class="ubicacion-label">📍 Área 2:</div>
+        <div class="count-row">
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', -1)">−</button>
+          <input class="count-input" id="cinp-${item.id}-area2" type="number" min="0" inputmode="numeric" value="${valArea2}" placeholder="0" oninput="updateCount('${item.id}', 'area2')" />
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', 1)">+</button>
+        </div>
+      </div>
+      <div class="total-row">
+        <span class="total-label">📊 TOTAL:</span>
+        <span class="total-value">${total} ${item.unidad}</span>
+      </div>
+    `;
     body.appendChild(card);
   });
+  
+  // Botón guardar al final
+  const saveButtonContainer = document.createElement('div');
+  saveButtonContainer.style.cssText = 'padding: 20px 12px; margin-top: 10px;';
+  saveButtonContainer.innerHTML = `
+    <button class="btn-primary" id="btn-guardar-final" onclick="goToSummary()" style="background: var(--accent2); font-size: 16px; padding: 14px;">
+      💾 Guardar Conteo Completo
+    </button>
+  `;
+  body.appendChild(saveButtonContainer);
 }
 
-function updateCount(id) {
-  const v = document.getElementById('cinp-'+id).value;
-  if (v===''||isNaN(v)) delete counts[id];
-  else counts[id] = Math.max(0,parseInt(v));
-  updateProgress(localItems[currentGroup.id]||[]);
+function updateCount(id, area) {
+  const inp = document.getElementById(`cinp-${id}-${area}`);
+  if (!inp) return;
+  
+  const val = inp.value === '' ? 0 : Math.max(0, parseInt(inp.value) || 0);
+  
+  if (!counts[id]) {
+    counts[id] = { area1: 0, area2: 0, total: 0 };
+  }
+  
+  counts[id][area] = val;
+  counts[id].total = (counts[id].area1 || 0) + (counts[id].area2 || 0);
+  
+  const totalSpan = document.querySelector(`#icard-${id} .total-value`);
+  if (totalSpan) {
+    const item = (localItems[currentGroup.id] || []).find(x => String(x.id) === String(id));
+    totalSpan.textContent = `${counts[id].total} ${item ? item.unidad : ''}`;
+  }
+  
+  hasUnsavedChanges = true;
+  updateProgress(localItems[currentGroup.id] || []);
 }
 
-function stepCount(id, d) {
-  const inp = document.getElementById('cinp-'+id);
-  const next = Math.max(0,(parseInt(inp.value)||0)+d);
-  inp.value=next; counts[id]=next;
-  refreshConfirmed(id,next);
-  updateProgress(localItems[currentGroup.id]||[]);
-}
-
-function confirmItem(id) {
-  const inp = document.getElementById('cinp-'+id);
-  if (inp.value===''||isNaN(inp.value)) { toast('Ingresa un valor numérico'); return; }
-  counts[id] = Math.max(0,parseInt(inp.value));
-  refreshConfirmed(id,counts[id]);
-  const items = localItems[currentGroup.id]||[];
-  updateProgress(items);
-  if (items.every(i => counts[i.id]!==undefined)) setTimeout(goToSummary,300);
-}
-
-function refreshConfirmed(id, val) {
-  const item = (localItems[currentGroup.id]||[]).find(x=>String(x.id)===String(id));
-  const card = document.getElementById('icard-'+id);
-  if (!card||!item) return;
-  card.classList.add('completed');
-  let el = card.querySelector('.item-confirmed');
-  const txt = `✓ Registrado: ${val} ${item.unidad}`;
-  if (el) el.textContent=txt;
-  else { const d=document.createElement('div'); d.className='item-confirmed'; d.textContent=txt; card.appendChild(d); }
+function stepCount(id, area, delta) {
+  const inp = document.getElementById(`cinp-${id}-${area}`);
+  if (!inp) return;
+  
+  const current = parseInt(inp.value) || 0;
+  const next = Math.max(0, current + delta);
+  inp.value = next;
+  
+  if (!counts[id]) {
+    counts[id] = { area1: 0, area2: 0, total: 0 };
+  }
+  counts[id][area] = next;
+  counts[id].total = (counts[id].area1 || 0) + (counts[id].area2 || 0);
+  
+  const totalSpan = document.querySelector(`#icard-${id} .total-value`);
+  if (totalSpan) {
+    const item = (localItems[currentGroup.id] || []).find(x => String(x.id) === String(id));
+    totalSpan.textContent = `${counts[id].total} ${item ? item.unidad : ''}`;
+  }
+  
+  hasUnsavedChanges = true;
+  updateProgress(localItems[currentGroup.id] || []);
 }
 
 function updateProgress(items) {
-  const pct = items.length ? Math.round(items.filter(i=>counts[i.id]!==undefined).length/items.length*100) : 0;
-  document.getElementById('progress-pct').textContent = pct+'%';
-  document.getElementById('progress-bar').style.width = pct+'%';
+  let completedCount = 0;
+  items.forEach(item => {
+    if (counts[item.id] && (counts[item.id].area1 > 0 || counts[item.id].area2 > 0)) {
+      completedCount++;
+    }
+  });
+  const pct = items.length ? Math.round(completedCount / items.length * 100) : 0;
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-bar').style.width = pct + '%';
 }
 
+// ── CONFIRMACIÓN DE CANCELACIÓN ─────────────────────
 function goBack() {
+  if (currentGroup && hasUnsavedChanges) {
+    document.getElementById('modal-confirm').classList.add('active');
+  } else {
+    executeGoBack();
+  }
+}
+
+function hideConfirmModal() {
+  document.getElementById('modal-confirm').classList.remove('active');
+}
+
+function confirmGoBack() {
+  hideConfirmModal();
+  executeGoBack();
+}
+
+function executeGoBack() {
   if (currentGroup) {
     api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
   }
-  loadHomeData().then(() => { renderHome(); show('home'); });
+  currentGroup = null;
+  counts = {};
+  resetUnsavedChanges();
+  loadHomeData().then(() => {
+    renderHome();
+    show('home');
+  });
 }
 
+// ── SUMMARY ────────────────────────────────────────
 function goToSummary() {
-  const items = localItems[currentGroup.id]||[];
-  document.getElementById('summary-sub').textContent = currentGroup.nombre+' · '+currentUser.sucursal;
+  const items = localItems[currentGroup.id] || [];
+  document.getElementById('summary-sub').textContent = currentGroup.nombre + ' · ' + currentUser.sucursal;
   document.getElementById('summary-meta').innerHTML =
     `<strong>Colaborador:</strong> ${currentUser.nombre}<br>
      <strong>Sucursal:</strong> ${currentUser.sucursal}<br>
      <strong>Área:</strong> ${currentUser.area}<br>
      <strong>Fecha y hora:</strong> ${nowDatetime()}`;
+  
   const table = document.getElementById('summary-table');
-  table.innerHTML='';
+  table.innerHTML = '';
+  
   items.forEach(item => {
-    const val = counts[item.id]!==undefined?counts[item.id]:'—';
-    const row = document.createElement('div'); row.className='summary-row';
-    row.innerHTML=`<span>${item.nombre}</span><span class="summary-val">${val} ${item.unidad}</span>`;
+    const area1 = counts[item.id]?.area1 || 0;
+    const area2 = counts[item.id]?.area2 || 0;
+    const total = area1 + area2;
+    const row = document.createElement('div');
+    row.className = 'summary-row';
+    row.innerHTML = `
+      <div style="flex:2"><strong>${item.nombre}</strong></div>
+      <div style="flex:1">Área 1: ${area1}</div>
+      <div style="flex:1">Área 2: ${area2}</div>
+      <div style="flex:1; text-align:right"><span class="summary-val">Total: ${total} ${item.unidad}</span></div>
+    `;
     table.appendChild(row);
   });
+  
   show('summary');
 }
 
+function goBackToEdit() {
+  show('count');
+  renderCountItems();
+}
+
 async function submitCount() {
-  setLoading('btn-guardar',true,'Confirmar y Guardar');
-  const items = localItems[currentGroup.id]||[];
+  setLoading('btn-guardar', true, 'Confirmar y Guardar');
+  const items = localItems[currentGroup.id] || [];
+  const itemsConteo = items.map(item => ({
+    nombre: item.nombre,
+    unidad: item.unidad,
+    cantidad: counts[item.id]?.total || 0,
+    area1: counts[item.id]?.area1 || 0,
+    area2: counts[item.id]?.area2 || 0
+  }));
+  
   const payload = {
     group_id: currentGroup.id,
     group_nombre: currentGroup.nombre,
     sucursal: currentUser.sucursal,
     colaborador: currentUser.nombre,
     area: currentUser.area,
-    items: items.map(i=>({ nombre:i.nombre, unidad:i.unidad, cantidad:counts[i.id]??0 }))
+    items: itemsConteo
   };
   
   try {
@@ -855,9 +978,8 @@ async function submitCount() {
       
       if (!window._doneIds) window._doneIds = new Set();
       window._doneIds.add(String(currentGroup.id));
-      console.log('✅ Grupo marcado como terminado:', currentGroup.id);
-      console.log('✅ _doneIds actualizado:', Array.from(window._doneIds));
       
+      resetUnsavedChanges();
       show('success');
     } else { 
       toast('❌ Error: '+ (res.error || 'No se pudo guardar')); 
@@ -865,19 +987,19 @@ async function submitCount() {
   } catch(e) { 
     toast('❌ Error de conexión.'); 
   }
-  setLoading('btn-guardar',false,'Confirmar y Guardar');
+  setLoading('btn-guardar', false, 'Confirmar y Guardar');
 }
 
 // ── INFO OVERLAY ───────────────────────────────────
 function showInfo(id) {
-  const item = (localItems[currentGroup.id]||[]).find(i=>String(i.id)===String(id));
+  const item = (localItems[currentGroup.id] || []).find(i => String(i.id) === String(id));
   if (!item) return;
   document.getElementById('info-item-name').textContent = item.nombre;
-  document.getElementById('info-ubicacion').textContent = item.ubicacion||'—';
-  document.getElementById('info-instrucciones').textContent = item.instrucciones||'—';
+  document.getElementById('info-ubicacion').textContent = item.ubicacion || '—';
+  document.getElementById('info-instrucciones').textContent = item.instrucciones || '—';
   document.getElementById('info-overlay').classList.add('open');
 }
-function closeOverlay(id, e) { if(e.target===document.getElementById(id)) document.getElementById(id).classList.remove('open'); }
+function closeOverlay(id, e) { if(e.target === document.getElementById(id)) document.getElementById(id).classList.remove('open'); }
 function closeOverlayBtn(id) { document.getElementById(id).classList.remove('open'); }
 
 // ── ADMIN DATA ─────────────────────────────────────
@@ -1179,6 +1301,15 @@ function setRecFilter(suc) {
   document.querySelectorAll('#rec-filter .rec-chip').forEach(c=>c.classList.toggle('active',c.textContent===suc));
   loadAndRenderRecords();
 }
+
+// ── CONFIRMACIÓN AL RECARGAR ───────────────────────
+window.addEventListener('beforeunload', function(e) {
+  if (hasUnsavedChanges && currentGroup) {
+    e.preventDefault();
+    e.returnValue = 'Tienes cambios sin guardar. ¿Estás seguro de salir?';
+    return e.returnValue;
+  }
+});
 
 // ── INIT ───────────────────────────────────────────
 window.addEventListener('load', () => {
