@@ -114,8 +114,9 @@
     .item-unit { font-size: 12px; color: var(--text-muted); }
     .count-row { display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; }
     .btn-step { width: 44px; height: 44px; min-width: 44px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface2); font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text); }
-    .count-input { flex: 1; min-width: 0; text-align: center; padding: 10px 4px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-title); font-size: 24px; font-weight: 700; color: var(--text); background: var(--surface2); outline: none; width: 100%; box-sizing: border-box; }
+    .count-input { flex: 1; min-width: 0; text-align: center; padding: 10px 4px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-title); font-size: 20px; font-weight: 500; color: var(--text); background: var(--surface2); outline: none; width: 100%; box-sizing: border-box; }
     .count-input:focus { border-color: var(--accent); }
+    .count-input::placeholder { color: #aaa; font-weight: 400; font-size: 18px; opacity: 0.6; }
     
     /* NUEVOS ESTILOS PARA ÁREAS */
     .ubicacion-row { margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
@@ -463,6 +464,26 @@ function nowDatetime() {
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 function getInitials(n) { return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 
+// Función para parsear decimales (soporta punto y coma)
+function parseDecimal(val) {
+  if (!val || val === '') return 0;
+  // Reemplazar coma por punto para soportar ambos formatos
+  const cleaned = val.toString().replace(',', '.');
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+// Función para formatear decimal (sin decimales innecesarios)
+function formatDecimal(val) {
+  if (val === undefined || val === null || val === '') return '';
+  const num = parseFloat(val);
+  if (isNaN(num)) return '';
+  // Si es entero, mostrar sin decimales
+  if (num === Math.floor(num)) return Math.floor(num).toString();
+  // Si tiene decimales, mostrar con punto
+  return num.toString();
+}
+
 async function api(action, data={}) {
   const params = new URLSearchParams({ action });
   for (const key in data) {
@@ -769,9 +790,9 @@ function renderCountItems() {
       counts[item.id] = { area1: 0, area2: 0, total: 0 };
     }
     
-    const valArea1 = counts[item.id].area1 !== undefined ? counts[item.id].area1 : '';
-    const valArea2 = counts[item.id].area2 !== undefined ? counts[item.id].area2 : '';
-    const total = (parseInt(valArea1) || 0) + (parseInt(valArea2) || 0);
+    const valArea1 = counts[item.id].area1 !== undefined && counts[item.id].area1 !== 0 ? formatDecimal(counts[item.id].area1) : '';
+    const valArea2 = counts[item.id].area2 !== undefined && counts[item.id].area2 !== 0 ? formatDecimal(counts[item.id].area2) : '';
+    const total = (parseDecimal(counts[item.id].area1) + parseDecimal(counts[item.id].area2));
     counts[item.id].total = total;
     
     const card = document.createElement('div');
@@ -793,22 +814,26 @@ function renderCountItems() {
       <div class="ubicacion-row">
         <div class="ubicacion-label">📍 Área 1:</div>
         <div class="count-row">
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', -1)">−</button>
-          <input class="count-input" id="cinp-${item.id}-area1" type="number" min="0" inputmode="numeric" value="${valArea1}" placeholder="0" oninput="updateCount('${item.id}', 'area1')" />
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', 1)">+</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', -0.1)">−</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', -1)" style="font-size:18px;">−1</button>
+          <input class="count-input" id="cinp-${item.id}-area1" type="text" inputmode="decimal" placeholder="0" value="${valArea1}" oninput="updateCount('${item.id}', 'area1')" />
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', 1)" style="font-size:18px;">+1</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', 0.1)">+</button>
         </div>
       </div>
       <div class="ubicacion-row">
         <div class="ubicacion-label">📍 Área 2:</div>
         <div class="count-row">
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', -1)">−</button>
-          <input class="count-input" id="cinp-${item.id}-area2" type="number" min="0" inputmode="numeric" value="${valArea2}" placeholder="0" oninput="updateCount('${item.id}', 'area2')" />
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', 1)">+</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', -0.1)">−</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', -1)" style="font-size:18px;">−1</button>
+          <input class="count-input" id="cinp-${item.id}-area2" type="text" inputmode="decimal" placeholder="0" value="${valArea2}" oninput="updateCount('${item.id}', 'area2')" />
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', 1)" style="font-size:18px;">+1</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', 0.1)">+</button>
         </div>
       </div>
       <div class="total-row">
         <span class="total-label">📊 TOTAL:</span>
-        <span class="total-value">${total} ${item.unidad}</span>
+        <span class="total-value">${formatDecimal(total)} ${item.unidad}</span>
       </div>
     `;
     body.appendChild(card);
@@ -829,19 +854,19 @@ function updateCount(id, area) {
   const inp = document.getElementById(`cinp-${id}-${area}`);
   if (!inp) return;
   
-  const val = inp.value === '' ? 0 : Math.max(0, parseInt(inp.value) || 0);
+  const val = parseDecimal(inp.value);
   
   if (!counts[id]) {
     counts[id] = { area1: 0, area2: 0, total: 0 };
   }
   
   counts[id][area] = val;
-  counts[id].total = (counts[id].area1 || 0) + (counts[id].area2 || 0);
+  counts[id].total = parseDecimal(counts[id].area1) + parseDecimal(counts[id].area2);
   
   const totalSpan = document.querySelector(`#icard-${id} .total-value`);
   if (totalSpan) {
     const item = (localItems[currentGroup.id] || []).find(x => String(x.id) === String(id));
-    totalSpan.textContent = `${counts[id].total} ${item ? item.unidad : ''}`;
+    totalSpan.textContent = `${formatDecimal(counts[id].total)} ${item ? item.unidad : ''}`;
   }
   
   hasUnsavedChanges = true;
@@ -852,20 +877,22 @@ function stepCount(id, area, delta) {
   const inp = document.getElementById(`cinp-${id}-${area}`);
   if (!inp) return;
   
-  const current = parseInt(inp.value) || 0;
+  const current = parseDecimal(inp.value);
   const next = Math.max(0, current + delta);
-  inp.value = next;
+  // Redondear a 2 decimales para evitar errores de precisión
+  const rounded = Math.round(next * 100) / 100;
+  inp.value = formatDecimal(rounded);
   
   if (!counts[id]) {
     counts[id] = { area1: 0, area2: 0, total: 0 };
   }
-  counts[id][area] = next;
-  counts[id].total = (counts[id].area1 || 0) + (counts[id].area2 || 0);
+  counts[id][area] = rounded;
+  counts[id].total = parseDecimal(counts[id].area1) + parseDecimal(counts[id].area2);
   
   const totalSpan = document.querySelector(`#icard-${id} .total-value`);
   if (totalSpan) {
     const item = (localItems[currentGroup.id] || []).find(x => String(x.id) === String(id));
-    totalSpan.textContent = `${counts[id].total} ${item ? item.unidad : ''}`;
+    totalSpan.textContent = `${formatDecimal(counts[id].total)} ${item ? item.unidad : ''}`;
   }
   
   hasUnsavedChanges = true;
@@ -875,7 +902,7 @@ function stepCount(id, area, delta) {
 function updateProgress(items) {
   let completedCount = 0;
   items.forEach(item => {
-    if (counts[item.id] && (counts[item.id].area1 > 0 || counts[item.id].area2 > 0)) {
+    if (counts[item.id] && (parseDecimal(counts[item.id].area1) > 0 || parseDecimal(counts[item.id].area2) > 0)) {
       completedCount++;
     }
   });
@@ -929,16 +956,16 @@ function goToSummary() {
   table.innerHTML = '';
   
   items.forEach(item => {
-    const area1 = counts[item.id]?.area1 || 0;
-    const area2 = counts[item.id]?.area2 || 0;
+    const area1 = parseDecimal(counts[item.id]?.area1);
+    const area2 = parseDecimal(counts[item.id]?.area2);
     const total = area1 + area2;
     const row = document.createElement('div');
     row.className = 'summary-row';
     row.innerHTML = `
       <div style="flex:2"><strong>${item.nombre}</strong></div>
-      <div style="flex:1">Área 1: ${area1}</div>
-      <div style="flex:1">Área 2: ${area2}</div>
-      <div style="flex:1; text-align:right"><span class="summary-val">Total: ${total} ${item.unidad}</span></div>
+      <div style="flex:1">Área 1: ${formatDecimal(area1)}</div>
+      <div style="flex:1">Área 2: ${formatDecimal(area2)}</div>
+      <div style="flex:1; text-align:right"><span class="summary-val">Total: ${formatDecimal(total)} ${item.unidad}</span></div>
     `;
     table.appendChild(row);
   });
@@ -957,9 +984,9 @@ async function submitCount() {
   const itemsConteo = items.map(item => ({
     nombre: item.nombre,
     unidad: item.unidad,
-    cantidad: counts[item.id]?.total || 0,
-    area1: counts[item.id]?.area1 || 0,
-    area2: counts[item.id]?.area2 || 0
+    cantidad: parseDecimal(counts[item.id]?.total) || 0,
+    area1: parseDecimal(counts[item.id]?.area1) || 0,
+    area2: parseDecimal(counts[item.id]?.area2) || 0
   }));
   
   const payload = {
@@ -1291,7 +1318,7 @@ async function loadAndRenderRecords() {
         <span class="rec-suc">${r.sucursal}</span>
       </div>
       <div class="rec-meta">Colaborador: <span>${r.colaborador}</span> &nbsp;·&nbsp; Área: <span>${r.area}</span></div>
-      <div class="rec-items">${items.map(i=>`<div class="rec-pill">${i.nombre}: <strong>${i.cantidad} ${i.unidad}</strong></div>`).join('')}</div>`;
+      <div class="rec-items">${items.map(i=>`<div class="rec-pill">${i.nombre}: <strong>${formatDecimal(i.cantidad)} ${i.unidad}</strong></div>`).join('')}</div>`;
     list.appendChild(card);
   });
 }
