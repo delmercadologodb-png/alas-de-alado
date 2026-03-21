@@ -113,12 +113,12 @@
     .item-name { font-family: var(--font-title); font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; word-break: break-word; }
     .item-unit { font-size: 12px; color: var(--text-muted); }
     .count-row { display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; }
-    .btn-step { width: 44px; height: 44px; min-width: 44px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface2); font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text); }
+    .btn-step { width: 44px; height: 44px; min-width: 44px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface2); font-size: 20px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text); }
     .count-input { flex: 1; min-width: 0; text-align: center; padding: 10px 4px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-title); font-size: 20px; font-weight: 500; color: var(--text); background: var(--surface2); outline: none; width: 100%; box-sizing: border-box; }
     .count-input:focus { border-color: var(--accent); }
     .count-input::placeholder { color: #aaa; font-weight: 400; font-size: 18px; opacity: 0.6; }
     
-    /* NUEVOS ESTILOS PARA ÁREAS */
+    /* ESTILOS PARA ÁREAS */
     .ubicacion-row { margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .ubicacion-row:last-of-type { border-bottom: none; }
     .ubicacion-label { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.03em; }
@@ -304,7 +304,7 @@
       <div class="summary-meta" id="summary-meta"></div>
       <div class="a-title">Cantidades registradas</div>
       <div class="summary-table" id="summary-table"></div>
-      <button class="btn-secondary" onclick="goBackToEdit()">← Regresar a editar</button>
+      <button class="btn-secondary" onclick="goBackToEdit()">Regresar a editar</button>
       <button class="btn-primary" id="btn-guardar" onclick="submitCount()">Confirmar y Guardar</button>
     </div>
   </div>
@@ -467,51 +467,82 @@ function getInitials(n) { return n.split(' ').slice(0,2).map(w=>w[0]).join('').t
 // Función para parsear decimales (soporta punto y coma)
 function parseDecimal(val) {
   if (!val || val === '') return 0;
-  // Reemplazar coma por punto para soportar ambos formatos
   const cleaned = val.toString().replace(',', '.');
   const parsed = parseFloat(cleaned);
   return isNaN(parsed) ? 0 : parsed;
 }
 
-// Función para formatear decimal (sin decimales innecesarios)
+// Función para formatear decimal
 function formatDecimal(val) {
   if (val === undefined || val === null || val === '') return '';
   const num = parseFloat(val);
   if (isNaN(num)) return '';
-  // Si es entero, mostrar sin decimales
   if (num === Math.floor(num)) return Math.floor(num).toString();
-  // Si tiene decimales, mostrar con punto
   return num.toString();
 }
 
+// ── API MEJORADA CON POST PARA IMÁGENES ─────────────────
 async function api(action, data={}) {
-  const params = new URLSearchParams({ action });
-  for (const key in data) {
-    const val = data[key];
-    params.set(key, typeof val === 'object' ? JSON.stringify(val) : val);
-  }
-  const url = API_URL + "?" + params.toString();
+  // Detectar si hay datos grandes (base64 de imágenes)
+  const jsonStr = JSON.stringify(data);
+  const hasLargeData = jsonStr.length > 2000;
   
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+  // Usar POST para acciones con imágenes o datos grandes
+  if (hasLargeData || action === 'addInsumo' || action === 'addGrupo') {
+    const url = API_URL;
+    const payload = { action, ...data };
     
-    const res = await fetch(url, { 
-      signal: controller.signal,
-      mode: 'cors',
-      cache: 'no-store'
-    });
-    
-    clearTimeout(timeoutId);
-    const data = await res.json();
-    return data;
-    
-  } catch (e) {
-    console.error('Error en API:', e);
-    if (e.name === 'AbortError') {
-      return { ok: false, error: 'timeout', message: 'La solicitud tardó demasiado' };
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      const result = await res.json();
+      return result;
+      
+    } catch (e) {
+      console.error('Error en API POST:', e);
+      if (e.name === 'AbortError') {
+        return { ok: false, error: 'timeout', message: 'La imagen tardó demasiado en subirse' };
+      }
+      return { ok: false, error: 'offline', message: 'Error de conexión' };
     }
-    return { ok: false, error: 'offline', message: 'Error de conexión' };
+  } else {
+    // Usar GET para datos pequeños
+    const params = new URLSearchParams({ action });
+    for (const key in data) {
+      const val = data[key];
+      params.set(key, typeof val === 'object' ? JSON.stringify(val) : val);
+    }
+    const url = API_URL + "?" + params.toString();
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
+      const res = await fetch(url, { 
+        signal: controller.signal,
+        mode: 'cors',
+        cache: 'no-store'
+      });
+      
+      clearTimeout(timeoutId);
+      return await res.json();
+      
+    } catch (e) {
+      console.error('Error en API GET:', e);
+      if (e.name === 'AbortError') {
+        return { ok: false, error: 'timeout', message: 'La solicitud tardó demasiado' };
+      }
+      return { ok: false, error: 'offline', message: 'Error de conexión' };
+    }
   }
 }
 
@@ -585,7 +616,6 @@ let localItems  = {};
 window._doneIds = new Set();
 window._enProceso = {};
 
-// Variables para control de cambios sin guardar
 let hasUnsavedChanges = false;
 let currentGroup = null;
 let counts = {};
@@ -726,7 +756,6 @@ function goHome() {
   });
 }
 
-// Auto-refresh
 let _autoRefreshTimer = null;
 function startAutoRefresh() {
   stopAutoRefresh();
@@ -812,39 +841,34 @@ function renderCountItems() {
         </div>
       </div>
       <div class="ubicacion-row">
-        <div class="ubicacion-label">📍 Área 1:</div>
+        <div class="ubicacion-label">Área 1:</div>
         <div class="count-row">
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', -0.1)">−</button>
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', -1)" style="font-size:18px;">−1</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', -0.1)">-0.1</button>
           <input class="count-input" id="cinp-${item.id}-area1" type="text" inputmode="decimal" placeholder="0" value="${valArea1}" oninput="updateCount('${item.id}', 'area1')" />
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', 1)" style="font-size:18px;">+1</button>
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', 0.1)">+</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', 0.1)">+0.1</button>
         </div>
       </div>
       <div class="ubicacion-row">
-        <div class="ubicacion-label">📍 Área 2:</div>
+        <div class="ubicacion-label">Área 2:</div>
         <div class="count-row">
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', -0.1)">−</button>
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', -1)" style="font-size:18px;">−1</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', -0.1)">-0.1</button>
           <input class="count-input" id="cinp-${item.id}-area2" type="text" inputmode="decimal" placeholder="0" value="${valArea2}" oninput="updateCount('${item.id}', 'area2')" />
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', 1)" style="font-size:18px;">+1</button>
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', 0.1)">+</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', 0.1)">+0.1</button>
         </div>
       </div>
       <div class="total-row">
-        <span class="total-label">📊 TOTAL:</span>
+        <span class="total-label">TOTAL:</span>
         <span class="total-value">${formatDecimal(total)} ${item.unidad}</span>
       </div>
     `;
     body.appendChild(card);
   });
   
-  // Botón guardar al final
   const saveButtonContainer = document.createElement('div');
   saveButtonContainer.style.cssText = 'padding: 20px 12px; margin-top: 10px;';
   saveButtonContainer.innerHTML = `
     <button class="btn-primary" id="btn-guardar-final" onclick="goToSummary()" style="background: var(--accent2); font-size: 16px; padding: 14px;">
-      💾 Guardar Conteo Completo
+      Guardar Conteo Completo
     </button>
   `;
   body.appendChild(saveButtonContainer);
@@ -879,7 +903,6 @@ function stepCount(id, area, delta) {
   
   const current = parseDecimal(inp.value);
   const next = Math.max(0, current + delta);
-  // Redondear a 2 decimales para evitar errores de precisión
   const rounded = Math.round(next * 100) / 100;
   inp.value = formatDecimal(rounded);
   
@@ -1194,6 +1217,8 @@ async function adminAddInsumo() {
   btn.textContent = 'Guardando...';
   
   try {
+    toast('⏳ Procesando imagen, por favor espera...');
+    
     const res = await api('addInsumo', {
       group_id,
       nombre,
@@ -1205,6 +1230,7 @@ async function adminAddInsumo() {
     
     if (!res.ok) {
       toast('❌ Error: ' + (res.error || 'No se pudo guardar'));
+      console.error('Error respuesta:', res);
       return;
     }
     
@@ -1222,7 +1248,7 @@ async function adminAddInsumo() {
     
   } catch (error) {
     console.error('Error al guardar insumo:', error);
-    toast('❌ Error de conexión al guardar');
+    toast('❌ Error de conexión al guardar. Revisa tu conexión a internet.');
   } finally {
     btn.disabled = false;
     btn.textContent = originalText;
@@ -1358,4 +1384,4 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 </body>
-</html>
+</html> 
