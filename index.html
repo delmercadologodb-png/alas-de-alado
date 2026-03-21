@@ -472,7 +472,6 @@ function parseDecimal(val) {
   return isNaN(parsed) ? 0 : parsed;
 }
 
-// Función para formatear decimal
 function formatDecimal(val) {
   if (val === undefined || val === null || val === '') return '';
   const num = parseFloat(val);
@@ -483,11 +482,9 @@ function formatDecimal(val) {
 
 // ── API MEJORADA CON POST PARA IMÁGENES ─────────────────
 async function api(action, data={}) {
-  // Detectar si hay datos grandes (base64 de imágenes)
   const jsonStr = JSON.stringify(data);
   const hasLargeData = jsonStr.length > 2000;
   
-  // Usar POST para acciones con imágenes o datos grandes
   if (hasLargeData || action === 'addInsumo' || action === 'addGrupo') {
     const url = API_URL;
     const payload = { action, ...data };
@@ -504,8 +501,7 @@ async function api(action, data={}) {
       });
       
       clearTimeout(timeoutId);
-      const result = await res.json();
-      return result;
+      return await res.json();
       
     } catch (e) {
       console.error('Error en API POST:', e);
@@ -515,7 +511,6 @@ async function api(action, data={}) {
       return { ok: false, error: 'offline', message: 'Error de conexión' };
     }
   } else {
-    // Usar GET para datos pequeños
     const params = new URLSearchParams({ action });
     for (const key in data) {
       const val = data[key];
@@ -669,16 +664,25 @@ function resetUnsavedChanges() {
 // ── HOME ───────────────────────────────────
 async function loadHomeData() {
   try {
+    console.log('🔍 Cargando datos home para sucursal:', currentUser?.sucursal);
+    
     const [gRes, doneRes, epRes] = await Promise.all([
       api('getGrupos', { sucursal: currentUser.sucursal }),
       api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: todayISO() }),
       api('getEnProceso', { sucursal: currentUser.sucursal }).catch(() => ({ ok: false }))
     ]);
     
+    console.log('📦 Grupos recibidos:', gRes);
+    console.log('✅ Respuesta getDoneGroups:', doneRes);
+    
     localGroups = gRes.ok ? gRes.grupos : [];
     
-    if (doneRes.ok) {
+    if (doneRes.ok && doneRes.doneIds) {
       window._doneIds = new Set(doneRes.doneIds.map(String));
+      console.log('🎯 IDs terminados recibidos:', Array.from(window._doneIds));
+    } else {
+      console.log('⚠️ No se recibieron doneIds:', doneRes);
+      window._doneIds = new Set();
     }
     
     window._enProceso = {};
@@ -687,9 +691,13 @@ async function loadHomeData() {
         window._enProceso[String(r.group_id)] = r.colaborador;
       });
     }
+    console.log('👥 En proceso:', window._enProceso);
     
   } catch(e) {
-    console.error('loadHomeData error:', e);
+    console.error('❌ Error en loadHomeData:', e);
+    localGroups = localGroups || [];
+    window._doneIds = window._doneIds || new Set();
+    window._enProceso = window._enProceso || {};
   }
 }
 
@@ -710,9 +718,16 @@ function renderHome() {
     return;
   }
   
+  console.log('🎨 Renderizando home');
+  console.log('localGroups:', localGroups.map(g => ({ id: g.id, nombre: g.nombre })));
+  console.log('_doneIds:', Array.from(window._doneIds));
+  
   localGroups.forEach(g => {
     const groupId = String(g.id);
-    const done = window._doneIds && window._doneIds.has(groupId);
+    const done = window._doneIds.has(groupId);
+    
+    console.log(`🔵 Grupo ${g.nombre} (${groupId}): terminado = ${done}`);
+    
     const enProcesoUser = window._enProceso && window._enProceso[groupId];
     const esMio = enProcesoUser === currentUser.nombre;
     const bloqueado = !done && enProcesoUser && !esMio;
@@ -746,9 +761,11 @@ function renderHome() {
 }
 
 function goHome() {
+  console.log('🏠 Volviendo a home');
   currentGroup = null;
   counts = {};
   resetUnsavedChanges();
+  
   loadHomeData().then(() => { 
     renderHome(); 
     show('home');
@@ -762,8 +779,7 @@ function startAutoRefresh() {
   _autoRefreshTimer = setInterval(async () => {
     const homeActive = document.getElementById('screen-home').classList.contains('active');
     if (homeActive && currentUser) {
-      await loadHomeData();
-      renderHome();
+      await checkTodayStatus();
     } else {
       stopAutoRefresh();
     }
@@ -771,6 +787,39 @@ function startAutoRefresh() {
 }
 function stopAutoRefresh() {
   if (_autoRefreshTimer) { clearInterval(_autoRefreshTimer); _autoRefreshTimer = null; }
+}
+
+async function checkTodayStatus() {
+  if (!currentUser || currentUser.role === 'admin') return;
+  
+  console.log('🔄 Verificando estados actualizados...');
+  const res = await api('getDoneGroups', { 
+    sucursal: currentUser.sucursal, 
+    fecha: todayISO() 
+  });
+  
+  if (res.ok && res.doneIds) {
+    const nuevosDoneIds = new Set(res.doneIds.map(String));
+    
+    const oldSize = window._doneIds.size;
+    const newSize = nuevosDoneIds.size;
+    
+    if (oldSize !== newSize) {
+      console.log(`✅ Cambios detectados: ${oldSize} -> ${newSize} grupos terminados`);
+      window._doneIds = nuevosDoneIds;
+      
+      if (res.enProceso) {
+        window._enProceso = {};
+        res.enProceso.forEach(r => {
+          window._enProceso[String(r.group_id)] = r.colaborador;
+        });
+      }
+      
+      if (document.getElementById('screen-home').classList.contains('active')) {
+        renderHome();
+      }
+    }
+  }
 }
 
 // ── COUNTING ─────────────────────────────
@@ -1023,11 +1072,15 @@ async function submitCount() {
   
   try {
     const res = await api('saveConteo', payload);
+    console.log('📥 Respuesta saveConteo:', res);
+    
     if (res.ok) {
       await api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
       
       if (!window._doneIds) window._doneIds = new Set();
       window._doneIds.add(String(currentGroup.id));
+      console.log('✅ Grupo marcado como terminado localmente:', currentGroup.id);
+      console.log('🎯 _doneIds actualizado:', Array.from(window._doneIds));
       
       resetUnsavedChanges();
       show('success');
@@ -1035,6 +1088,7 @@ async function submitCount() {
       toast('❌ Error: '+ (res.error || 'No se pudo guardar')); 
     }
   } catch(e) { 
+    console.error('Error en submitCount:', e);
     toast('❌ Error de conexión.'); 
   }
   setLoading('btn-guardar', false, 'Confirmar y Guardar');
@@ -1384,4 +1438,4 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 </body>
-</html> 
+</html>
