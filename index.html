@@ -495,7 +495,7 @@ async function api(action, data={}) {
       
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain' }, // text/plain evita el preflight CORS de GAS
         body: JSON.stringify(payload),
         signal: controller.signal
       });
