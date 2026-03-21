@@ -1,5 +1,11 @@
-const CACHE = 'alas-de-alado-v8';
-const BASE = '/alas-de-alado';
+// ─────────────────────────────────────────────────────────
+//  SERVICE WORKER — Alas de Alado
+//  SOLUCIÓN CACHÉ: Cambia CACHE_VERSION cada vez que subas
+//  cambios a GitHub. Ej: v9 → v10 → v11 …
+// ─────────────────────────────────────────────────────────
+const CACHE_VERSION = 'v10';                          // ← INCREMENTA ESTO CADA DEPLOY
+const CACHE = 'alas-de-alado-' + CACHE_VERSION;
+const BASE  = '/alas-de-alado';
 const ASSETS = [
   BASE + '/',
   BASE + '/index.html',
@@ -8,38 +14,52 @@ const ASSETS = [
   BASE + '/icon-512.png'
 ];
 
+// ── INSTALL: precachear assets ────────────────────────────
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then(c => c.addAll(ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
+// ── ACTIVATE: eliminar cachés anteriores ──────────────────
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys =>
+        Promise.all(
+          keys
+            .filter(k => k !== CACHE)
+            .map(k => caches.delete(k))
+        )
+      )
+      .then(() => self.clients.claim())
   );
 });
 
+// ── FETCH ────────────────────────────────────────────────
 self.addEventListener('fetch', e => {
   const url = e.request.url;
-  
-  // ⚠️ CRÍTICO: NO INTERCEPTAR LLAMADAS A LA API
-  if (url.includes('script.google.com')) {
-    return;
-  }
-  
-  // No cachear fuentes de Google
+
+  // 1. Nunca interceptar llamadas a la API de Google
+  if (url.includes('script.google.com')) return;
+
+  // 2. Nunca cachear fuentes de Google
   if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
     e.respondWith(fetch(e.request));
     return;
   }
-  
-  // Para archivos HTML: estrategia network-first
-  if (url.endsWith('.html') || url === BASE + '/' || url === BASE) {
+
+  // 3. HTML → network-first (siempre intenta la red primero)
+  const isHtml =
+    url.endsWith('.html') ||
+    url === (self.location.origin + BASE + '/') ||
+    url === (self.location.origin + BASE);
+
+  if (isHtml) {
     e.respondWith(
-      fetch(e.request)
+      fetch(e.request, { cache: 'no-store' })
         .then(res => {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
@@ -49,9 +69,16 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-  
-  // Para assets estáticos: cache-first
+
+  // 4. Assets estáticos → cache-first
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
+});
+
+// ── MENSAJE: forzar actualización desde la app ───────────
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
