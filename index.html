@@ -1007,17 +1007,16 @@ function confirmGoBack() {
   executeGoBack();
 }
 
-function executeGoBack() {
+async function executeGoBack() {
   if (currentGroup) {
-    api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
+    await api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
   }
   currentGroup = null;
   counts = {};
   resetUnsavedChanges();
-  loadHomeData().then(() => {
-    renderHome();
-    show('home');
-  });
+  await loadHomeData();
+  renderHome();
+  show('home');
 }
 
 // ── SUMMARY ────────────────────────────────────────
