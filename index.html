@@ -791,34 +791,40 @@ function stopAutoRefresh() {
 
 async function checkTodayStatus() {
   if (!currentUser || currentUser.role === 'admin') return;
-  
-  console.log('🔄 Verificando estados actualizados...');
-  const res = await api('getDoneGroups', { 
-    sucursal: currentUser.sucursal, 
-    fecha: todayISO() 
-  });
-  
-  if (res.ok && res.doneIds) {
-    const nuevosDoneIds = new Set(res.doneIds.map(String));
-    
-    const oldSize = window._doneIds.size;
-    const newSize = nuevosDoneIds.size;
-    
-    if (oldSize !== newSize) {
-      console.log(`✅ Cambios detectados: ${oldSize} -> ${newSize} grupos terminados`);
-      window._doneIds = nuevosDoneIds;
-      
-      if (res.enProceso) {
-        window._enProceso = {};
-        res.enProceso.forEach(r => {
-          window._enProceso[String(r.group_id)] = r.colaborador;
-        });
-      }
-      
+
+  try {
+    const res = await api('getDoneGroups', {
+      sucursal: currentUser.sucursal,
+      fecha: todayISO()
+    });
+
+    if (!res.ok) return;
+
+    // Nuevo estado recibido del servidor
+    const nuevosDoneIds = new Set((res.doneIds || []).map(String));
+
+    const nuevoEnProceso = {};
+    (res.enProceso || []).forEach(r => {
+      nuevoEnProceso[String(r.group_id)] = r.colaborador;
+    });
+
+    // Detectar cambios en terminados O en proceso
+    const donesCambiaron =
+      nuevosDoneIds.size !== window._doneIds.size ||
+      [...nuevosDoneIds].some(id => !window._doneIds.has(id));
+
+    const epCambio = JSON.stringify(window._enProceso) !== JSON.stringify(nuevoEnProceso);
+
+    if (donesCambiaron || epCambio) {
+      window._doneIds   = nuevosDoneIds;
+      window._enProceso = nuevoEnProceso;
+
       if (document.getElementById('screen-home').classList.contains('active')) {
         renderHome();
       }
     }
+  } catch(e) {
+    // Silenciar errores de red en el polling automático
   }
 }
 
@@ -1434,7 +1440,35 @@ document.addEventListener('keydown', e=>{
 <!-- SERVICE WORKER REGISTRATION -->
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+
+    // Detectar cuando hay un nuevo SW esperando (versión actualizada)
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      if (!newWorker) return;
+
+      newWorker.addEventListener('statechange', () => {
+        // Nuevo SW instalado y listo, pero hay un SW viejo activo
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // Activar inmediatamente sin esperar que el usuario cierre la app
+          newWorker.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+
+    // Cuando el SW activo cambia (se activó el nuevo), recargar la página
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+
+    // Verificar si ya hay una actualización disponible al cargar
+    reg.update().catch(() => {});
+
+  }).catch(() => {});
 }
 </script>
 </body>
