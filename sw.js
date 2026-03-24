@@ -3,7 +3,7 @@
 //  SOLUCIÓN CACHÉ: Cambia CACHE_VERSION cada vez que subas
 //  cambios a GitHub. Ej: v9 → v10 → v11 …
 // ─────────────────────────────────────────────────────────
-const CACHE_VERSION = 'v12';                          // ← INCREMENTA ESTO CADA DEPLOY
+const CACHE_VERSION = 'v13';                          // ← INCREMENTA ESTO CADA DEPLOY
 const CACHE = 'alas-de-alado-' + CACHE_VERSION;
 const BASE  = '/alas-de-alado';
 const ASSETS = [
