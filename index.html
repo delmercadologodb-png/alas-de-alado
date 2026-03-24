@@ -89,6 +89,15 @@
     .badge-green { background: var(--green); color: #fff; }
     .badge-red { background: var(--red); color: #fff; }
 
+    /* COLORES POR ÁREA */
+    .area-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 5px; }
+    .area-cocina         { background: #DBEAFE; color: #1D4ED8; border: 1px solid #BFDBFE; }
+    .area-barra          { background: #EDE9FE; color: #6D28D9; border: 1px solid #DDD6FE; }
+    .area-caja           { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
+    .area-administracion { background: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0; }
+    .obligatorio-tag { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 4px; background: #FFF7ED; color: #C2410C; border: 1.5px solid #FED7AA; animation: pulseOblig 2s infinite; }
+    @keyframes pulseOblig { 0%,100%{ opacity:1; } 50%{ opacity:0.65; } }
+
     /* COUNT */
     .count-sticky { position: sticky; top: 0; z-index: 10; }
     .count-topbar { background: var(--brand); padding: 13px 16px; display: flex; align-items: center; gap: 10px; }
@@ -372,6 +381,25 @@
               <div id="group-upload-ph" class="img-ph">📷 Toca para subir imagen</div>
             </div>
           </div>
+          <select class="a-select" id="ng-area">
+            <option value="">Área responsable (opcional)</option>
+            <option value="cocina">🔵 Cocina</option>
+            <option value="barra">🟣 Barra</option>
+            <option value="caja">🟠 Caja</option>
+            <option value="administracion">🟢 Administración</option>
+          </select>
+          <div id="ng-dias-wrap" style="display:none;">
+            <div class="upload-label" style="margin-bottom:6px;">Días activos (conteo obligatorio)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="1" class="ng-dia"> Lun</label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="2" class="ng-dia"> Mar</label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="3" class="ng-dia"> Mié</label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="4" class="ng-dia"> Jue</label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="5" class="ng-dia"> Vie</label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="6" class="ng-dia"> Sáb</label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="0" class="ng-dia"> Dom</label>
+            </div>
+          </div>
           <button class="btn-add" onclick="adminAddGrupo()">+ Agregar grupo</button>
         </div>
         <div class="a-title">Grupos existentes</div>
@@ -429,6 +457,39 @@
     </div>
   </div>
 
+</div>
+
+<!-- MODAL EDITAR GRUPO -->
+<div id="modal-edit-grupo" class="modal-confirm">
+  <div class="modal-content" style="width:300px;">
+    <div style="font-family:var(--font-title);font-size:15px;font-weight:700;margin-bottom:4px;" id="eg-nombre"></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">Asignar área y días de conteo obligatorio</div>
+    <div style="display:flex;flex-direction:column;gap:10px;text-align:left;">
+      <select class="a-select" id="eg-area">
+        <option value="">Sin área asignada</option>
+        <option value="cocina">🔵 Cocina</option>
+        <option value="barra">🟣 Barra</option>
+        <option value="caja">🟠 Caja</option>
+        <option value="administracion">🟢 Administración</option>
+      </select>
+      <div id="eg-dias-wrap" style="display:none;">
+        <div style="font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Días activos</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="1" class="eg-dia"> Lun</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="2" class="eg-dia"> Mar</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="3" class="eg-dia"> Mié</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="4" class="eg-dia"> Jue</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="5" class="eg-dia"> Vie</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="6" class="eg-dia"> Sáb</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" value="0" class="eg-dia"> Dom</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-buttons" style="margin-top:18px;">
+      <button class="modal-cancel-btn" onclick="closeEditGrupo()">Cancelar</button>
+      <button class="modal-confirm-btn" id="btn-save-edit-grupo" onclick="saveEditGrupo()" style="background:var(--accent2);">Guardar</button>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL DE CONFIRMACIÓN -->
@@ -744,11 +805,39 @@ function renderHome() {
     let badgeClass = done ? 'badge-red' : (bloqueado ? 'badge-yellow' : 'badge-green');
     let badgeText  = done ? 'TERMINADO' : (bloqueado ? 'EN PROCESO' : 'DISPONIBLE');
     let subText    = bloqueado ? `Contando: ${enProcesoUser}` : g.sucursal;
-    
+
+    // ── Acento de área y etiqueta obligatorio ──────────
+    const AREA_COLORS = {
+      cocina: 'area-cocina', barra: 'area-barra',
+      caja: 'area-caja', administracion: 'area-administracion'
+    };
+    const AREA_NAMES = {
+      cocina: '🔵 Cocina', barra: '🟣 Barra',
+      caja: '🟠 Caja', administracion: '🟢 Administración'
+    };
+
+    let areaTagHtml = '';
+    let obligatorioHtml = '';
+
+    if (g.area_color && AREA_COLORS[g.area_color]) {
+      areaTagHtml = `<span class="area-tag ${AREA_COLORS[g.area_color]}">${AREA_NAMES[g.area_color]}</span>`;
+
+      // Verificar si hoy es día activo para este grupo
+      if (g.dias_activo) {
+        const hoyDia = String(new Date().getDay()); // 0=Dom … 6=Sáb
+        const diasActivos = g.dias_activo.split(',').map(d => d.trim());
+        if (diasActivos.includes(hoyDia) && !done) {
+          obligatorioHtml = `<span class="obligatorio-tag">⚠️ Conteo obligatorio para hoy</span>`;
+        }
+      }
+    }
+
     card.innerHTML = `${thumb}
       <div class="group-info">
         <div class="group-name">${g.nombre}</div>
         <div class="group-sub">${subText}</div>
+        ${areaTagHtml}
+        ${obligatorioHtml}
       </div>
       <div class="group-badge ${badgeClass}">${badgeText}</div>`;
     
@@ -1191,29 +1280,61 @@ function renderUsersList() {
 }
 
 // GRUPOS
+const AREA_LABELS = {
+  cocina: '🔵 Cocina',
+  barra: '🟣 Barra',
+  caja: '🟠 Caja',
+  administracion: '🟢 Administración'
+};
+const DIAS_LABELS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+// Mostrar/ocultar selector de días cuando se elige área
+document.addEventListener('change', e => {
+  if (e.target && e.target.id === 'ng-area') {
+    document.getElementById('ng-dias-wrap').style.display = e.target.value ? 'block' : 'none';
+  }
+});
+
+function getDiasSeleccionados() {
+  return Array.from(document.querySelectorAll('.ng-dia:checked')).map(c => c.value).join(',');
+}
+
+function setDiasCheckboxes(diasStr) {
+  const vals = diasStr ? diasStr.split(',') : [];
+  document.querySelectorAll('.ng-dia').forEach(c => {
+    c.checked = vals.includes(c.value);
+  });
+}
+
 async function adminAddGrupo() {
   const nombre   = document.getElementById('ng-nombre').value.trim();
   const sucursal = document.getElementById('ng-sucursal').value;
   if (!nombre||!sucursal) { toast('Llena nombre y sucursal'); return; }
-  
+
+  const area_color  = document.getElementById('ng-area').value || '';
+  const dias_activo = area_color ? getDiasSeleccionados() : '';
+
   const btn = document.querySelector('#panel-grupos .btn-add');
   btn.disabled = true;
   btn.textContent = 'Guardando...';
-  
-  const res = await api('addGrupo',{nombre,sucursal,imagen_url:pendingImgs.group||''});
-  if (!res.ok) { 
-    toast(res.error||'Error'); 
+
+  const res = await api('addGrupo',{nombre, sucursal, imagen_url: pendingImgs.group||'', area_color, dias_activo});
+  if (!res.ok) {
+    toast(res.error||'Error');
     btn.disabled = false;
     btn.textContent = '+ Agregar grupo';
-    return; 
+    return;
   }
-  adminData.grupos.push({id:res.id,nombre,sucursal,imagen_url:pendingImgs.group||''});
+  adminData.grupos.push({id:res.id, nombre, sucursal, imagen_url:pendingImgs.group||'', area_color, dias_activo});
   document.getElementById('ng-nombre').value='';
   document.getElementById('ng-sucursal').value='';
+  document.getElementById('ng-area').value='';
+  document.getElementById('ng-dias-wrap').style.display='none';
+  setDiasCheckboxes('');
   resetUpload('group');
-  renderGroupsList(); 
+  renderGroupsList();
   toast('✅ Grupo agregado');
-  
+
   btn.disabled = false;
   btn.textContent = '+ Agregar grupo';
 }
@@ -1223,6 +1344,62 @@ async function adminDelGrupo(id) {
   adminData.grupos = adminData.grupos.filter(g=>String(g.id)!==String(id));
   renderGroupsList(); renderItemsList();
   toast('✅ Grupo eliminado');
+}
+
+// Modal de edición de grupo
+let editingGroupId = null;
+
+function openEditGrupo(id) {
+  const g = adminData.grupos.find(x => String(x.id) === String(id));
+  if (!g) return;
+  editingGroupId = id;
+  document.getElementById('eg-nombre').textContent  = g.nombre;
+  document.getElementById('eg-area').value          = g.area_color || '';
+  document.getElementById('eg-dias-wrap').style.display = g.area_color ? 'block' : 'none';
+  setDiasCheckboxesEdit(g.dias_activo || '');
+  document.getElementById('modal-edit-grupo').classList.add('active');
+}
+
+function closeEditGrupo() {
+  document.getElementById('modal-edit-grupo').classList.remove('active');
+  editingGroupId = null;
+}
+
+function setDiasCheckboxesEdit(diasStr) {
+  const vals = diasStr ? diasStr.split(',') : [];
+  document.querySelectorAll('.eg-dia').forEach(c => {
+    c.checked = vals.includes(c.value);
+  });
+}
+
+document.addEventListener('change', e => {
+  if (e.target && e.target.id === 'eg-area') {
+    document.getElementById('eg-dias-wrap').style.display = e.target.value ? 'block' : 'none';
+  }
+});
+
+async function saveEditGrupo() {
+  if (!editingGroupId) return;
+  const area_color  = document.getElementById('eg-area').value || '';
+  const dias_activo = area_color
+    ? Array.from(document.querySelectorAll('.eg-dia:checked')).map(c=>c.value).join(',')
+    : '';
+
+  const btn = document.getElementById('btn-save-edit-grupo');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  const res = await api('updateGrupo', { id: editingGroupId, area_color, dias_activo });
+  btn.disabled = false; btn.textContent = 'Guardar';
+
+  if (!res.ok) { toast('❌ Error al guardar'); return; }
+
+  // Actualizar local
+  const g = adminData.grupos.find(x => String(x.id) === String(editingGroupId));
+  if (g) { g.area_color = area_color; g.dias_activo = dias_activo; }
+
+  closeEditGrupo();
+  renderGroupsList();
+  toast('✅ Grupo actualizado');
 }
 
 function renderGroupsList() {
@@ -1237,11 +1414,14 @@ function renderGroupsList() {
       const thumb=g.imagen_url
         ?`<img src="${g.imagen_url}" style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;" />`
         :`<div style="width:30px;height:30px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">📦</div>`;
+      const areaLabel = g.area_color ? `<span style="font-size:10px;color:var(--text-muted);"> · ${AREA_LABELS[g.area_color]||g.area_color}</span>` : '';
+      const diasLabel = g.dias_activo ? `<span style="font-size:10px;color:var(--text-muted);"> · ${g.dias_activo.split(',').map(d=>DIAS_LABELS[d]).join(', ')}</span>` : '';
       card.innerHTML=`${thumb}
         <div class="a-card-info">
           <div class="a-card-name">${g.nombre}</div>
-          <div class="a-card-sub">${g.sucursal}</div>
+          <div class="a-card-sub">${g.sucursal}${areaLabel}${diasLabel}</div>
         </div>
+        <button class="btn-add" style="font-size:11px;padding:5px 9px;margin-right:4px;" onclick="openEditGrupo('${g.id}')">Editar</button>
         <button class="btn-del" onclick="adminDelGrupo('${g.id}')">Eliminar</button>`;
       list.appendChild(card);
     });
