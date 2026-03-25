@@ -277,6 +277,7 @@
         <span class="tag tag-area" id="welcome-area"></span>
       </div>
       <div class="welcome-date" id="welcome-date"></div>
+      <div id="turno-banner" style="display:inline-flex;align-items:center;margin-top:7px;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:0.04em;"></div>
     </div>
     <div class="groups-body">
       <div class="section-label">Grupos de inventario</div>
@@ -492,6 +493,33 @@
   </div>
 </div>
 
+<!-- MODAL CONFIRMACIÓN CEROS -->
+<div id="modal-ceros" class="modal-confirm">
+  <div class="modal-content" style="width:310px;max-height:70vh;overflow-y:auto;">
+    <div style="font-size:18px;margin-bottom:8px;">⚠️</div>
+    <p style="font-size:14px;font-weight:700;margin-bottom:8px;color:var(--text);">¿Sin existencias?</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Confirmas que <strong>no hay existencias</strong> de:</p>
+    <div id="modal-ceros-lista" style="text-align:left;margin-bottom:16px;display:flex;flex-direction:column;gap:5px;"></div>
+    <div class="modal-buttons">
+      <button class="modal-cancel-btn" onclick="document.getElementById('modal-ceros').classList.remove('active')">Regresar</button>
+      <button class="modal-confirm-btn" onclick="confirmarCeros()">Sí, confirmo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REANUDAR BORRADOR -->
+<div id="modal-borrador" class="modal-confirm">
+  <div class="modal-content" style="width:300px;">
+    <div style="font-size:18px;margin-bottom:8px;">💾</div>
+    <p style="font-size:14px;font-weight:700;margin-bottom:6px;color:var(--text);">Conteo pausado encontrado</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;" id="modal-borrador-sub"></p>
+    <div class="modal-buttons">
+      <button class="modal-cancel-btn" onclick="descartarBorrador()">Empezar nuevo</button>
+      <button class="modal-confirm-btn" onclick="reanudarBorrador()" style="background:var(--accent2);">Reanudar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DE CONFIRMACIÓN -->
 <div id="modal-confirm" class="modal-confirm">
   <div class="modal-content">
@@ -523,6 +551,22 @@ function nowDatetime() {
   return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 function todayISO() { return new Date().toISOString().split('T')[0]; }
+
+// ── TURNOS ──────────────────────────────────────────
+function turnoActual() {
+  const hora = new Date().getHours();
+  return hora >= 15 ? 'CIERRE' : 'APERTURA';
+}
+
+function fechaTurno() {
+  return todayISO() + '_' + turnoActual();
+}
+
+function turnoLabel() {
+  return turnoActual() === 'APERTURA'
+    ? '🌅 Turno Apertura  ·  08:00 – 14:59'
+    : '🌙 Turno Cierre  ·  15:00 – cierre';
+}
 function getInitials(n) { return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 
 // Función para parsear decimales (soporta punto y coma)
@@ -706,6 +750,7 @@ async function doLogin() {
 
 function logout() {
   stopAutoRefresh();
+  stopAutoSave();
   resetUnsavedChanges();
   currentUser = null;
   currentGroup = null;
@@ -722,6 +767,67 @@ function resetUnsavedChanges() {
   hasUnsavedChanges = false;
 }
 
+// ── BORRADORES ─────────────────────────────────────────
+let _borradorPendiente = null;  // guarda el borrador cargado del servidor
+let _autoSaveTimer = null;
+
+function startAutoSave() {
+  stopAutoSave();
+  _autoSaveTimer = setInterval(() => {
+    if (currentGroup && hasUnsavedChanges) {
+      guardarBorrador(false); // silencioso, sin toast
+    }
+  }, 60000); // cada 60 segundos
+}
+
+function stopAutoSave() {
+  if (_autoSaveTimer) { clearInterval(_autoSaveTimer); _autoSaveTimer = null; }
+}
+
+async function guardarBorrador(mostrarToast = false) {
+  if (!currentGroup || !currentUser) return;
+  await api('saveBorrador', {
+    group_id:    currentGroup.id,
+    colaborador: currentUser.nombre,
+    sucursal:    currentUser.sucursal,
+    turno:       fechaTurno(),
+    counts_json: JSON.stringify(counts)
+  });
+  if (mostrarToast) toast('💾 Progreso guardado');
+}
+
+async function limpiarBorrador(groupId) {
+  if (!currentUser) return;
+  await api('deleteBorrador', {
+    group_id:    groupId,
+    colaborador: currentUser.nombre
+  });
+}
+
+function reanudarBorrador() {
+  if (!_borradorPendiente) return;
+  try {
+    const saved = JSON.parse(_borradorPendiente.counts_json);
+    Object.assign(counts, saved);
+  } catch(e) { /* borrador corrupto, ignorar */ }
+  _borradorPendiente = null;
+  document.getElementById('modal-borrador').classList.remove('active');
+  renderCountItems();
+  show('count');
+  startAutoSave();
+}
+
+async function descartarBorrador() {
+  document.getElementById('modal-borrador').classList.remove('active');
+  if (_borradorPendiente) {
+    await limpiarBorrador(currentGroup.id);
+    _borradorPendiente = null;
+  }
+  renderCountItems();
+  show('count');
+  startAutoSave();
+}
+
 // ── HOME ───────────────────────────────────
 async function loadHomeData() {
   try {
@@ -729,7 +835,7 @@ async function loadHomeData() {
     
     const [gRes, doneRes, epRes] = await Promise.all([
       api('getGrupos', { sucursal: currentUser.sucursal }),
-      api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: todayISO() }),
+      api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: fechaTurno() }),
       api('getEnProceso', { sucursal: currentUser.sucursal }).catch(() => ({ ok: false }))
     ]);
     
@@ -770,6 +876,16 @@ function renderHome() {
   document.getElementById('welcome-suc').textContent  = u.sucursal;
   document.getElementById('welcome-area').textContent = u.area;
   document.getElementById('welcome-date').textContent = todayLabel();
+
+  // Banner de turno
+  const tb = document.getElementById('turno-banner');
+  if (turnoActual() === 'APERTURA') {
+    tb.textContent = '🌅 Turno Apertura';
+    tb.style.cssText = 'display:inline-flex;align-items:center;margin-top:7px;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:0.04em;background:rgba(251,191,36,0.18);color:#FCD34D;border:1px solid rgba(251,191,36,0.3);';
+  } else {
+    tb.textContent = '🌙 Turno Cierre';
+    tb.style.cssText = 'display:inline-flex;align-items:center;margin-top:7px;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:0.04em;background:rgba(139,92,246,0.18);color:#C4B5FD;border:1px solid rgba(139,92,246,0.3);';
+  }
 
   const grid = document.getElementById('groups-grid');
   grid.innerHTML = '';
@@ -863,11 +979,22 @@ function goHome() {
 }
 
 let _autoRefreshTimer = null;
+let _turnoActivo = null;   // controla si el turno cambió entre ciclos
+
 function startAutoRefresh() {
   stopAutoRefresh();
+  _turnoActivo = turnoActual();
   _autoRefreshTimer = setInterval(async () => {
     const homeActive = document.getElementById('screen-home').classList.contains('active');
     if (homeActive && currentUser) {
+      // Si el turno cambió, forzar recarga completa del home
+      const turnoAhora = turnoActual();
+      if (turnoAhora !== _turnoActivo) {
+        _turnoActivo = turnoAhora;
+        await loadHomeData();
+        renderHome();
+        return;
+      }
       await checkTodayStatus();
     } else {
       stopAutoRefresh();
@@ -884,7 +1011,7 @@ async function checkTodayStatus() {
   try {
     const res = await api('getDoneGroups', {
       sucursal: currentUser.sucursal,
-      fecha: todayISO()
+      fecha: fechaTurno()
     });
 
     if (!res.ok) return;
@@ -920,7 +1047,7 @@ async function checkTodayStatus() {
 // ── COUNTING ─────────────────────────────
 async function startCounting(group) {
   if (window._doneIds.has(String(group.id))) {
-    toast('❌ Este grupo ya tiene un inventario registrado hoy');
+    toast('❌ Este grupo ya tiene un inventario registrado en este turno');
     return;
   }
   
@@ -944,12 +1071,28 @@ async function startCounting(group) {
   resetUnsavedChanges();
   document.getElementById('count-group-name').textContent = group.nombre;
   document.getElementById('count-body').innerHTML = '<div style="text-align:center;padding:40px;">Cargando insumos...</div>';
-  
-  const res = await api('getInsumos', { group_id: group.id });
-  localItems[group.id] = res.ok ? res.insumos : [];
-  
+
+  const [insRes, borrRes] = await Promise.all([
+    api('getInsumos', { group_id: group.id }),
+    api('getBorrador', { group_id: group.id, colaborador: currentUser.nombre, turno: fechaTurno() })
+  ]);
+
+  localItems[group.id] = insRes.ok ? insRes.insumos : [];
+
+  // Si hay borrador del mismo turno, ofrecer reanudar
+  if (borrRes.ok && borrRes.borrador) {
+    _borradorPendiente = borrRes.borrador;
+    const ts = borrRes.borrador.timestamp || '';
+    document.getElementById('modal-borrador-sub').textContent =
+      `Tienes un conteo pausado de ${group.nombre}${ts ? ' · guardado ' + ts : ''}. ¿Deseas continuar donde lo dejaste?`;
+    document.getElementById('modal-borrador').classList.add('active');
+    show('count');
+    return; // espera decisión del usuario
+  }
+
   renderCountItems();
   show('count');
+  startAutoSave();
 }
 
 function renderCountItems() {
@@ -987,17 +1130,17 @@ function renderCountItems() {
       <div class="ubicacion-row">
         <div class="ubicacion-label">Área 1:</div>
         <div class="count-row">
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', -0.1)">-0.1</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', -0.5)">-0.5</button>
           <input class="count-input" id="cinp-${item.id}-area1" type="text" inputmode="decimal" placeholder="0" value="${valArea1}" oninput="updateCount('${item.id}', 'area1')" />
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', 0.1)">+0.1</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area1', 0.5)">+0.5</button>
         </div>
       </div>
       <div class="ubicacion-row">
         <div class="ubicacion-label">Área 2:</div>
         <div class="count-row">
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', -0.1)">-0.1</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', -0.5)">-0.5</button>
           <input class="count-input" id="cinp-${item.id}-area2" type="text" inputmode="decimal" placeholder="0" value="${valArea2}" oninput="updateCount('${item.id}', 'area2')" />
-          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', 0.1)">+0.1</button>
+          <button class="btn-step" onclick="stepCount('${item.id}', 'area2', 0.5)">+0.5</button>
         </div>
       </div>
       <div class="total-row">
@@ -1098,18 +1241,24 @@ function confirmGoBack() {
 
 async function executeGoBack() {
   if (currentGroup) {
+    // Guardar borrador antes de salir si hay cambios
+    if (hasUnsavedChanges) {
+      await guardarBorrador(false);
+    }
     await api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
   }
+  stopAutoSave();
   currentGroup = null;
   counts = {};
   resetUnsavedChanges();
   await loadHomeData();
   renderHome();
   show('home');
+  startAutoRefresh();
 }
 
 // ── SUMMARY ────────────────────────────────────────
-function goToSummary() {
+function renderSummaryScreen() {
   const items = localItems[currentGroup.id] || [];
   document.getElementById('summary-sub').textContent = currentGroup.nombre + ' · ' + currentUser.sucursal;
   document.getElementById('summary-meta').innerHTML =
@@ -1117,10 +1266,10 @@ function goToSummary() {
      <strong>Sucursal:</strong> ${currentUser.sucursal}<br>
      <strong>Área:</strong> ${currentUser.area}<br>
      <strong>Fecha y hora:</strong> ${nowDatetime()}`;
-  
+
   const table = document.getElementById('summary-table');
   table.innerHTML = '';
-  
+
   items.forEach(item => {
     const area1 = parseDecimal(counts[item.id]?.area1);
     const area2 = parseDecimal(counts[item.id]?.area2);
@@ -1135,8 +1284,36 @@ function goToSummary() {
     `;
     table.appendChild(row);
   });
-  
+
   show('summary');
+}
+
+function goToSummary() {
+  const items = localItems[currentGroup.id] || [];
+
+  // Detectar insumos con cantidad cero en ambas áreas
+  const ceros = items.filter(item => {
+    const a1 = parseDecimal(counts[item.id]?.area1);
+    const a2 = parseDecimal(counts[item.id]?.area2);
+    return a1 === 0 && a2 === 0;
+  });
+
+  if (ceros.length > 0) {
+    // Mostrar modal de confirmación de ceros
+    const lista = document.getElementById('modal-ceros-lista');
+    lista.innerHTML = ceros.map(item =>
+      `<div style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;color:var(--red);">📦 ${item.nombre}</div>`
+    ).join('');
+    document.getElementById('modal-ceros').classList.add('active');
+    return; // espera confirmación
+  }
+
+  renderSummaryScreen();
+}
+
+function confirmarCeros() {
+  document.getElementById('modal-ceros').classList.remove('active');
+  renderSummaryScreen();
 }
 
 function goBackToEdit() {
@@ -1170,11 +1347,11 @@ async function submitCount() {
     
     if (res.ok) {
       await api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
+      await limpiarBorrador(currentGroup.id);
+      stopAutoSave();
       
       if (!window._doneIds) window._doneIds = new Set();
       window._doneIds.add(String(currentGroup.id));
-      console.log('✅ Grupo marcado como terminado localmente:', currentGroup.id);
-      console.log('🎯 _doneIds actualizado:', Array.from(window._doneIds));
       
       resetUnsavedChanges();
       show('success');
