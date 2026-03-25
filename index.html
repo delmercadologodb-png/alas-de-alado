@@ -68,6 +68,27 @@
     .tag-area { background: rgba(43,190,173,0.2); color: var(--accent2); }
     .welcome-date { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 6px; }
 
+    /* BANNER BORRADORES */
+    .borradores-banner { display: none; background: #FFFBEB; border-bottom: 1px solid #FDE68A; padding: 10px 16px; }
+    .borradores-banner-inner { display: flex; align-items: center; gap: 8px; }
+    .borradores-banner-icon { font-size: 15px; flex-shrink: 0; }
+    .borradores-banner-text { font-size: 12px; color: #B45309; flex: 1; line-height: 1.4; }
+    .borradores-banner-text strong { font-weight: 700; }
+
+    /* BANNER SESIÓN EXPIRADA */
+    #session-expired-banner {
+      display: none; position: fixed; inset: 0; background: rgba(26,10,10,0.85);
+      z-index: 9998; align-items: center; justify-content: center; padding: 24px;
+    }
+    #session-expired-banner.active { display: flex; }
+    .session-expired-card {
+      background: #fff; border-radius: 20px; padding: 28px 24px; width: 100%;
+      max-width: 320px; text-align: center;
+    }
+    .session-expired-icon { font-size: 32px; margin-bottom: 12px; }
+    .session-expired-title { font-family: var(--font-title); font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+    .session-expired-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+
     /* GROUPS */
     .groups-body { flex: 1; padding: 16px; overflow-y: auto; }
     .section-label { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
@@ -103,6 +124,12 @@
     .count-topbar { background: var(--brand); padding: 13px 16px; display: flex; align-items: center; gap: 10px; }
     .btn-back { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 22px; cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0; }
     .count-group-name { font-family: var(--font-title); font-size: 15px; font-weight: 700; color: #fff; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* INDICADOR AUTO-GUARDADO */
+    .autosave-indicator { font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; flex-shrink: 0; transition: color 0.3s; }
+    .autosave-indicator.saving { color: var(--accent2); }
+    .autosave-indicator.saved  { color: rgba(43,190,173,0.8); }
+
     .count-progress-wrap { background: var(--brand-mid); padding: 12px 16px 14px; }
     .progress-header { display: flex; justify-content: space-between; margin-bottom: 7px; }
     .progress-label { font-size: 12px; color: rgba(255,255,255,0.4); }
@@ -126,7 +153,7 @@
     .count-input { flex: 1; min-width: 0; text-align: center; padding: 10px 4px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-title); font-size: 20px; font-weight: 500; color: var(--text); background: var(--surface2); outline: none; width: 100%; box-sizing: border-box; }
     .count-input:focus { border-color: var(--accent); }
     .count-input::placeholder { color: #aaa; font-weight: 400; font-size: 18px; opacity: 0.6; }
-    
+
     /* ESTILOS PARA ÁREAS */
     .ubicacion-row { margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .ubicacion-row:last-of-type { border-bottom: none; }
@@ -134,7 +161,7 @@
     .total-row { margin-top: 10px; padding-top: 8px; border-top: 2px solid var(--accent2); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-title); }
     .total-label { font-size: 13px; font-weight: 700; color: var(--accent2); }
     .total-value { font-size: 18px; font-weight: 800; color: var(--accent); background: var(--red-bg); padding: 4px 12px; border-radius: 20px; }
-    
+
     /* MODAL CONFIRMACIÓN */
     .modal-confirm { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; }
     .modal-confirm.active { display: flex; }
@@ -236,6 +263,16 @@
   <div class="loader-spinner"></div>
 </div>
 
+<!-- BANNER SESIÓN EXPIRADA -->
+<div id="session-expired-banner">
+  <div class="session-expired-card">
+    <div class="session-expired-icon">🔒</div>
+    <div class="session-expired-title">Sesión expirada</div>
+    <div class="session-expired-sub">Tu sesión ha cerrado por inactividad. Ingresa de nuevo para continuar.</div>
+    <button class="btn-primary" onclick="handleSessionExpired()">Volver a ingresar</button>
+  </div>
+</div>
+
 <div id="app">
 
   <!-- LOGIN -->
@@ -279,6 +316,13 @@
       <div class="welcome-date" id="welcome-date"></div>
       <div id="turno-banner" style="display:inline-flex;align-items:center;margin-top:7px;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:0.04em;"></div>
     </div>
+    <!-- BANNER BORRADORES PENDIENTES -->
+    <div class="borradores-banner" id="borradores-banner">
+      <div class="borradores-banner-inner">
+        <span class="borradores-banner-icon">💾</span>
+        <span class="borradores-banner-text" id="borradores-banner-text"></span>
+      </div>
+    </div>
     <div class="groups-body">
       <div class="section-label">Grupos de inventario</div>
       <div class="groups-grid" id="groups-grid"></div>
@@ -291,6 +335,7 @@
       <div class="count-topbar">
         <button class="btn-back" onclick="goBack()">&#8592;</button>
         <div class="count-group-name" id="count-group-name"></div>
+        <div class="autosave-indicator" id="autosave-indicator">—</div>
       </div>
       <div class="count-progress-wrap">
         <div class="progress-header">
@@ -535,7 +580,7 @@
 
 <script>
 // ── CONFIG ─────────────────────────────────────────
-const API_URL = "https://script.google.com/macros/s/AKfycbyQreJJTEZFJdIx2kDNPxvkA6_71pP298vtZzn1BXcPI3534HpI5moaL6xmlRMlU0De/exec"; // Reemplaza con tu URL
+const API_URL = "https://script.google.com/macros/s/AKfycbyQreJJTEZFJdIx2kDNPxvkA6_71pP298vtZzn1BXcPI3534HpI5moaL6xmlRMlU0De/exec";
 
 // ── HELPERS ────────────────────────────────────────
 const DAYS   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -557,11 +602,7 @@ function turnoActual() {
   const hora = new Date().getHours();
   return hora >= 15 ? 'CIERRE' : 'APERTURA';
 }
-
-function fechaTurno() {
-  return todayISO() + '_' + turnoActual();
-}
-
+function fechaTurno() { return todayISO() + '_' + turnoActual(); }
 function turnoLabel() {
   return turnoActual() === 'APERTURA'
     ? '🌅 Turno Apertura  ·  08:00 – 14:59'
@@ -569,14 +610,12 @@ function turnoLabel() {
 }
 function getInitials(n) { return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 
-// Función para parsear decimales (soporta punto y coma)
 function parseDecimal(val) {
   if (!val || val === '') return 0;
   const cleaned = val.toString().replace(',', '.');
   const parsed = parseFloat(cleaned);
   return isNaN(parsed) ? 0 : parsed;
 }
-
 function formatDecimal(val) {
   if (val === undefined || val === null || val === '') return '';
   const num = parseFloat(val);
@@ -585,70 +624,100 @@ function formatDecimal(val) {
   return num.toString();
 }
 
-// ── API MEJORADA CON POST PARA IMÁGENES ─────────────────
-async function api(action, data={}) {
-  const jsonStr = JSON.stringify(data);
+// ── SESIÓN ─────────────────────────────────────────
+// El token se guarda en sessionStorage: persiste mientras el tab esté abierto,
+// se borra al cerrar el navegador/tab — comportamiento correcto para una app de turno.
+function getToken() { return sessionStorage.getItem('alas_token') || ''; }
+function setToken(t) { sessionStorage.setItem('alas_token', t); }
+function clearToken() { sessionStorage.removeItem('alas_token'); }
+
+function showSessionExpiredBanner() {
+  document.getElementById('session-expired-banner').classList.add('active');
+}
+
+function handleSessionExpired() {
+  document.getElementById('session-expired-banner').classList.remove('active');
+  forceLogout();
+}
+
+function forceLogout() {
+  stopAutoRefresh();
+  stopAutoSave();
+  resetUnsavedChanges();
+  currentUser  = null;
+  currentGroup = null;
+  counts       = {};
+  localGroups  = [];
+  localItems   = {};
+  window._doneIds      = new Set();
+  window._enProceso    = {};
+  window._borradoresHome = [];
+  clearToken();
+  document.getElementById('inp-user').value = '';
+  document.getElementById('inp-pass').value = '';
+  // Cerrar todos los modales abiertos
+  document.querySelectorAll('.modal-confirm.active').forEach(m => m.classList.remove('active'));
+  show('login');
+}
+
+// ── API ─────────────────────────────────────────────
+async function api(action, data = {}) {
+  // Inyectar token en cada llamada (excepto login/ping)
+  const payload = (action === 'login' || action === 'ping')
+    ? data
+    : { ...data, token: getToken() };
+
+  const jsonStr    = JSON.stringify(payload);
   const hasLargeData = jsonStr.length > 2000;
-  
-  if (hasLargeData || action === 'addInsumo' || action === 'addGrupo') {
-    const url = API_URL;
-    const payload = { action, ...data };
-    
-    try {
+
+  try {
+    let res;
+    if (hasLargeData || action === 'addInsumo' || action === 'addGrupo') {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
-      
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' }, // text/plain evita el preflight CORS de GAS
-        body: JSON.stringify(payload),
-        signal: controller.signal
+      const timeoutId  = setTimeout(() => controller.abort(), 60000);
+      const response   = await fetch(API_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body:    JSON.stringify({ action, ...payload }),
+        signal:  controller.signal
       });
-      
       clearTimeout(timeoutId);
-      return await res.json();
-      
-    } catch (e) {
-      console.error('Error en API POST:', e);
-      if (e.name === 'AbortError') {
-        return { ok: false, error: 'timeout', message: 'La imagen tardó demasiado en subirse' };
+      res = await response.json();
+    } else {
+      const params = new URLSearchParams({ action });
+      for (const key in payload) {
+        const val = payload[key];
+        params.set(key, typeof val === 'object' ? JSON.stringify(val) : val);
       }
-      return { ok: false, error: 'offline', message: 'Error de conexión' };
-    }
-  } else {
-    const params = new URLSearchParams({ action });
-    for (const key in data) {
-      const val = data[key];
-      params.set(key, typeof val === 'object' ? JSON.stringify(val) : val);
-    }
-    const url = API_URL + "?" + params.toString();
-    
-    try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-      
-      const res = await fetch(url, { 
+      const timeoutId  = setTimeout(() => controller.abort(), 30000);
+      const response   = await fetch(API_URL + '?' + params.toString(), {
         signal: controller.signal,
-        mode: 'cors',
-        cache: 'no-store'
+        mode:   'cors',
+        cache:  'no-store'
       });
-      
       clearTimeout(timeoutId);
-      return await res.json();
-      
-    } catch (e) {
-      console.error('Error en API GET:', e);
-      if (e.name === 'AbortError') {
-        return { ok: false, error: 'timeout', message: 'La solicitud tardó demasiado' };
-      }
-      return { ok: false, error: 'offline', message: 'Error de conexión' };
+      res = await response.json();
     }
+
+    // Detectar sesión expirada devuelta por el backend
+    if (res && res.error === 'session_expired' && action !== 'login') {
+      clearToken();
+      showSessionExpiredBanner();
+      return { ok: false, error: 'session_expired' };
+    }
+
+    return res;
+
+  } catch (e) {
+    if (e.name === 'AbortError') return { ok: false, error: 'timeout', message: 'La solicitud tardó demasiado' };
+    return { ok: false, error: 'offline', message: 'Error de conexión' };
   }
 }
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-'+id).classList.add('active');
+  document.getElementById('screen-' + id).classList.add('active');
 }
 
 function toast(msg) {
@@ -661,8 +730,30 @@ function toast(msg) {
 function setLoading(btnId, loading, defaultText) {
   const btn = document.getElementById(btnId);
   if (!btn) return;
-  btn.disabled = loading;
+  btn.disabled  = loading;
   btn.textContent = loading ? 'Cargando...' : defaultText;
+}
+
+// ── INDICADOR DE AUTO-GUARDADO ──────────────────────
+let _lastSaveTime = null;
+
+function setAutosaveStatus(status) {
+  // status: 'saving' | 'saved' | 'idle'
+  const el = document.getElementById('autosave-indicator');
+  if (!el) return;
+  if (status === 'saving') {
+    el.textContent = 'Guardando…';
+    el.className   = 'autosave-indicator saving';
+  } else if (status === 'saved') {
+    _lastSaveTime  = new Date();
+    el.textContent = 'Guardado';
+    el.className   = 'autosave-indicator saved';
+  } else {
+    el.textContent = _lastSaveTime
+      ? 'Guardado ' + _lastSaveTime.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+      : '—';
+    el.className = 'autosave-indicator';
+  }
 }
 
 // ── IMAGE COMPRESSION ──────────────────────────────
@@ -677,9 +768,9 @@ function compressToWebP(file, maxW, maxH, q) {
         const ratio = Math.min(maxW/img.width, maxH/img.height, 1);
         const w = Math.round(img.width*ratio), h = Math.round(img.height*ratio);
         const c = document.createElement('canvas');
-        c.width=w; c.height=h;
-        c.getContext('2d').drawImage(img,0,0,w,h);
-        res(c.toDataURL('image/webp',q));
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        res(c.toDataURL('image/webp', q));
       };
       img.src = e.target.result;
     };
@@ -690,31 +781,32 @@ function compressToWebP(file, maxW, maxH, q) {
 function handleImg(event, type) {
   const file = event.target.files[0];
   if (!file) return;
-  const cfg = type==='group' ? [300,300,0.8] : [600,400,0.82];
-  compressToWebP(file,...cfg).then(webp => {
+  const cfg = type === 'group' ? [300, 300, 0.8] : [600, 400, 0.82];
+  compressToWebP(file, ...cfg).then(webp => {
     pendingImgs[type] = webp;
-    document.getElementById(type+'-img-preview').src = webp;
-    document.getElementById(type+'-img-preview').style.display = 'block';
-    document.getElementById(type+'-upload-ph').style.display = 'none';
+    document.getElementById(type + '-img-preview').src = webp;
+    document.getElementById(type + '-img-preview').style.display = 'block';
+    document.getElementById(type + '-upload-ph').style.display = 'none';
   });
 }
 
 function resetUpload(type) {
   pendingImgs[type] = null;
-  const p = document.getElementById(type+'-img-preview');
-  p.style.display='none'; p.src='';
-  document.getElementById(type+'-upload-ph').style.display='block';
-  const a = document.getElementById(type+'-upload-area');
+  const p = document.getElementById(type + '-img-preview');
+  p.style.display = 'none'; p.src = '';
+  document.getElementById(type + '-upload-ph').style.display = 'block';
+  const a = document.getElementById(type + '-upload-area');
   const inp = a && a.querySelector('input[type=file]');
-  if(inp) inp.value='';
+  if (inp) inp.value = '';
 }
 
 // ── AUTH ───────────────────────────────────────────
 let currentUser = null;
 let localGroups = [];
 let localItems  = {};
-window._doneIds = new Set();
-window._enProceso = {};
+window._doneIds      = new Set();
+window._enProceso    = {};
+window._borradoresHome = [];
 
 let hasUnsavedChanges = false;
 let currentGroup = null;
@@ -731,6 +823,7 @@ async function doLogin() {
       document.getElementById('login-err').style.display = 'block';
     } else {
       document.getElementById('login-err').style.display = 'none';
+      setToken(res.token);
       currentUser = res.user;
       if (currentUser.role === 'admin') {
         await loadAdminData();
@@ -748,36 +841,32 @@ async function doLogin() {
   setLoading('btn-login', false, 'Ingresar');
 }
 
-function logout() {
+async function logout() {
   stopAutoRefresh();
   stopAutoSave();
   resetUnsavedChanges();
-  currentUser = null;
-  currentGroup = null;
-  counts = {};
-  localGroups = []; localItems = {};
-  window._doneIds = new Set();
-  window._enProceso = {};
-  document.getElementById('inp-user').value='';
-  document.getElementById('inp-pass').value='';
-  show('login');
+  const token = getToken();
+  if (token) {
+    api('logout', { token }).catch(() => {});
+  }
+  forceLogout();
 }
 
-function resetUnsavedChanges() {
-  hasUnsavedChanges = false;
-}
+function resetUnsavedChanges() { hasUnsavedChanges = false; }
 
 // ── BORRADORES ─────────────────────────────────────────
-let _borradorPendiente = null;  // guarda el borrador cargado del servidor
-let _autoSaveTimer = null;
+let _borradorPendiente = null;
+let _autoSaveTimer     = null;
 
 function startAutoSave() {
   stopAutoSave();
-  _autoSaveTimer = setInterval(() => {
+  _autoSaveTimer = setInterval(async () => {
     if (currentGroup && hasUnsavedChanges) {
-      guardarBorrador(false); // silencioso, sin toast
+      setAutosaveStatus('saving');
+      await guardarBorrador(false);
+      setAutosaveStatus('saved');
     }
-  }, 60000); // cada 60 segundos
+  }, 60000);
 }
 
 function stopAutoSave() {
@@ -786,6 +875,7 @@ function stopAutoSave() {
 
 async function guardarBorrador(mostrarToast = false) {
   if (!currentGroup || !currentUser) return;
+  setAutosaveStatus('saving');
   await api('saveBorrador', {
     group_id:    currentGroup.id,
     colaborador: currentUser.nombre,
@@ -793,6 +883,7 @@ async function guardarBorrador(mostrarToast = false) {
     turno:       fechaTurno(),
     counts_json: JSON.stringify(counts)
   });
+  setAutosaveStatus('saved');
   if (mostrarToast) toast('💾 Progreso guardado');
 }
 
@@ -809,7 +900,7 @@ function reanudarBorrador() {
   try {
     const saved = JSON.parse(_borradorPendiente.counts_json);
     Object.assign(counts, saved);
-  } catch(e) { /* borrador corrupto, ignorar */ }
+  } catch(e) { /* borrador corrupto */ }
   _borradorPendiente = null;
   document.getElementById('modal-borrador').classList.remove('active');
   renderCountItems();
@@ -828,49 +919,56 @@ async function descartarBorrador() {
   startAutoSave();
 }
 
-// ── HOME ───────────────────────────────────
+// ── HOME ───────────────────────────────────────────
 async function loadHomeData() {
   try {
-    console.log('🔍 Cargando datos home para sucursal:', currentUser?.sucursal);
-    
     const [gRes, doneRes, epRes] = await Promise.all([
-      api('getGrupos', { sucursal: currentUser.sucursal }),
+      api('getGrupos',    { sucursal: currentUser.sucursal }),
       api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: fechaTurno() }),
       api('getEnProceso', { sucursal: currentUser.sucursal }).catch(() => ({ ok: false }))
     ]);
-    
-    console.log('📦 Grupos recibidos:', gRes);
-    console.log('✅ Respuesta getDoneGroups:', doneRes);
-    
+
     localGroups = gRes.ok ? gRes.grupos : [];
-    
-    if (doneRes.ok && doneRes.doneIds) {
-      window._doneIds = new Set(doneRes.doneIds.map(String));
-      console.log('🎯 IDs terminados recibidos:', Array.from(window._doneIds));
-    } else {
-      console.log('⚠️ No se recibieron doneIds:', doneRes);
-      window._doneIds = new Set();
-    }
-    
+
+    window._doneIds = (doneRes.ok && doneRes.doneIds)
+      ? new Set(doneRes.doneIds.map(String))
+      : new Set();
+
     window._enProceso = {};
     if (epRes && epRes.ok && epRes.enProceso) {
       epRes.enProceso.forEach(r => {
         window._enProceso[String(r.group_id)] = r.colaborador;
       });
     }
-    console.log('👥 En proceso:', window._enProceso);
-    
+
+    // Buscar borradores del turno actual para grupos no terminados
+    window._borradoresHome = [];
+    const gruposDisponibles = localGroups.filter(g => !window._doneIds.has(String(g.id)));
+
+    if (gruposDisponibles.length > 0) {
+      const borrRes = await api('getBorradoresUsuario', {
+        colaborador: currentUser.nombre,
+        turno: fechaTurno()
+      });
+      if (borrRes.ok && borrRes.borradores && borrRes.borradores.length > 0) {
+        borrRes.borradores.forEach(b => {
+          const grupo = gruposDisponibles.find(g => String(g.id) === String(b.group_id));
+          if (grupo) window._borradoresHome.push({ grupo, borrador: b });
+        });
+      }
+    }
+
   } catch(e) {
-    console.error('❌ Error en loadHomeData:', e);
-    localGroups = localGroups || [];
-    window._doneIds = window._doneIds || new Set();
-    window._enProceso = window._enProceso || {};
+    localGroups            = localGroups  || [];
+    window._doneIds        = window._doneIds || new Set();
+    window._enProceso      = window._enProceso || {};
+    window._borradoresHome = [];
   }
 }
 
 function renderHome() {
   const u = currentUser;
-  document.getElementById('avatar-home').textContent = getInitials(u.nombre);
+  document.getElementById('avatar-home').textContent  = getInitials(u.nombre);
   document.getElementById('topbar-uname').textContent = u.nombre.split(' ')[0];
   document.getElementById('welcome-name').textContent = u.nombre;
   document.getElementById('welcome-suc').textContent  = u.sucursal;
@@ -887,60 +985,56 @@ function renderHome() {
     tb.style.cssText = 'display:inline-flex;align-items:center;margin-top:7px;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:0.04em;background:rgba(139,92,246,0.18);color:#C4B5FD;border:1px solid rgba(139,92,246,0.3);';
   }
 
+  // Banner borradores pendientes
+  const borrBanner = document.getElementById('borradores-banner');
+  const borrText   = document.getElementById('borradores-banner-text');
+  const borrs      = window._borradoresHome || [];
+  if (borrs.length > 0) {
+    const nombres = borrs.map(b => `"${b.grupo.nombre}"`).join(', ');
+    borrText.innerHTML = `Tienes un conteo pausado: <strong>${nombres}</strong>. Tócalo para continuar.`;
+    borrBanner.style.display = 'block';
+  } else {
+    borrBanner.style.display = 'none';
+  }
+
   const grid = document.getElementById('groups-grid');
   grid.innerHTML = '';
-  
+
   if (!localGroups.length) {
     grid.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:12px 0;">No hay grupos asignados para esta sucursal.</div>';
     return;
   }
-  
-  console.log('🎨 Renderizando home');
-  console.log('localGroups:', localGroups.map(g => ({ id: g.id, nombre: g.nombre })));
-  console.log('_doneIds:', Array.from(window._doneIds));
-  
+
   localGroups.forEach(g => {
     const groupId = String(g.id);
-    const done = window._doneIds.has(groupId);
-    
-    console.log(`🔵 Grupo ${g.nombre} (${groupId}): terminado = ${done}`);
-    
+    const done    = window._doneIds.has(groupId);
     const enProcesoUser = window._enProceso && window._enProceso[groupId];
-    const esMio = enProcesoUser === currentUser.nombre;
+    const esMio   = enProcesoUser === currentUser.nombre;
     const bloqueado = !done && enProcesoUser && !esMio;
-    
+
     let estado = done ? 'done' : (bloqueado ? 'en-proceso' : 'available');
-    
+
     const card = document.createElement('div');
     card.className = 'group-card ' + estado;
-    
+
     const thumb = g.imagen_url
       ? `<div class="group-thumb"><img src="${g.imagen_url}" /></div>`
       : `<div class="group-thumb">📦</div>`;
-    
+
     let badgeClass = done ? 'badge-red' : (bloqueado ? 'badge-yellow' : 'badge-green');
     let badgeText  = done ? 'TERMINADO' : (bloqueado ? 'EN PROCESO' : 'DISPONIBLE');
     let subText    = bloqueado ? `Contando: ${enProcesoUser}` : g.sucursal;
 
-    // ── Acento de área y etiqueta obligatorio ──────────
-    const AREA_COLORS = {
-      cocina: 'area-cocina', barra: 'area-barra',
-      caja: 'area-caja', administracion: 'area-administracion'
-    };
-    const AREA_NAMES = {
-      cocina: '🔵 Cocina', barra: '🟣 Barra',
-      caja: '🟠 Caja', administracion: '🟢 Administración'
-    };
+    const AREA_COLORS = { cocina: 'area-cocina', barra: 'area-barra', caja: 'area-caja', administracion: 'area-administracion' };
+    const AREA_NAMES  = { cocina: '🔵 Cocina', barra: '🟣 Barra', caja: '🟠 Caja', administracion: '🟢 Administración' };
 
-    let areaTagHtml = '';
+    let areaTagHtml    = '';
     let obligatorioHtml = '';
 
     if (g.area_color && AREA_COLORS[g.area_color]) {
       areaTagHtml = `<span class="area-tag ${AREA_COLORS[g.area_color]}">${AREA_NAMES[g.area_color]}</span>`;
-
-      // Verificar si hoy es día activo para este grupo
       if (g.dias_activo) {
-        const hoyDia = String(new Date().getDay()); // 0=Dom … 6=Sáb
+        const hoyDia = String(new Date().getDay());
         const diasActivos = g.dias_activo.split(',').map(d => d.trim());
         if (diasActivos.includes(hoyDia) && !done) {
           obligatorioHtml = `<span class="obligatorio-tag">⚠️ Conteo obligatorio para hoy</span>`;
@@ -956,30 +1050,28 @@ function renderHome() {
         ${obligatorioHtml}
       </div>
       <div class="group-badge ${badgeClass}">${badgeText}</div>`;
-    
+
     if (!done && !bloqueado) {
       card.onclick = () => startCounting(g);
     }
-    
     grid.appendChild(card);
   });
 }
 
 function goHome() {
-  console.log('🏠 Volviendo a home');
   currentGroup = null;
   counts = {};
   resetUnsavedChanges();
-  
-  loadHomeData().then(() => { 
-    renderHome(); 
+  _lastSaveTime = null;
+  loadHomeData().then(() => {
+    renderHome();
     show('home');
     startAutoRefresh();
   });
 }
 
 let _autoRefreshTimer = null;
-let _turnoActivo = null;   // controla si el turno cambió entre ciclos
+let _turnoActivo      = null;
 
 function startAutoRefresh() {
   stopAutoRefresh();
@@ -987,7 +1079,6 @@ function startAutoRefresh() {
   _autoRefreshTimer = setInterval(async () => {
     const homeActive = document.getElementById('screen-home').classList.contains('active');
     if (homeActive && currentUser) {
-      // Si el turno cambió, forzar recarga completa del home
       const turnoAhora = turnoActual();
       if (turnoAhora !== _turnoActivo) {
         _turnoActivo = turnoAhora;
@@ -1001,79 +1092,63 @@ function startAutoRefresh() {
     }
   }, 5000);
 }
+
 function stopAutoRefresh() {
   if (_autoRefreshTimer) { clearInterval(_autoRefreshTimer); _autoRefreshTimer = null; }
 }
 
 async function checkTodayStatus() {
   if (!currentUser || currentUser.role === 'admin') return;
-
   try {
-    const res = await api('getDoneGroups', {
-      sucursal: currentUser.sucursal,
-      fecha: fechaTurno()
-    });
-
+    const res = await api('getDoneGroups', { sucursal: currentUser.sucursal, fecha: fechaTurno() });
     if (!res.ok) return;
-
-    // Nuevo estado recibido del servidor
-    const nuevosDoneIds = new Set((res.doneIds || []).map(String));
-
+    const nuevosDoneIds  = new Set((res.doneIds || []).map(String));
     const nuevoEnProceso = {};
-    (res.enProceso || []).forEach(r => {
-      nuevoEnProceso[String(r.group_id)] = r.colaborador;
-    });
-
-    // Detectar cambios en terminados O en proceso
-    const donesCambiaron =
-      nuevosDoneIds.size !== window._doneIds.size ||
+    (res.enProceso || []).forEach(r => { nuevoEnProceso[String(r.group_id)] = r.colaborador; });
+    const donesCambiaron = nuevosDoneIds.size !== window._doneIds.size ||
       [...nuevosDoneIds].some(id => !window._doneIds.has(id));
-
     const epCambio = JSON.stringify(window._enProceso) !== JSON.stringify(nuevoEnProceso);
-
     if (donesCambiaron || epCambio) {
       window._doneIds   = nuevosDoneIds;
       window._enProceso = nuevoEnProceso;
-
-      if (document.getElementById('screen-home').classList.contains('active')) {
-        renderHome();
-      }
+      if (document.getElementById('screen-home').classList.contains('active')) renderHome();
     }
-  } catch(e) {
-    // Silenciar errores de red en el polling automático
-  }
+  } catch(e) { /* silenciar errores de polling */ }
 }
 
-// ── COUNTING ─────────────────────────────
+// ── COUNTING ──────────────────────────────────────
 async function startCounting(group) {
   if (window._doneIds.has(String(group.id))) {
     toast('❌ Este grupo ya tiene un inventario registrado en este turno');
     return;
   }
-  
+
   stopAutoRefresh();
-  
+
   const lockRes = await api('startConteo', {
-    group_id: group.id,
-    sucursal: currentUser.sucursal,
+    group_id:    group.id,
+    sucursal:    currentUser.sucursal,
     colaborador: currentUser.nombre
   });
-  
+
   if (!lockRes.ok) {
+    if (lockRes.error === 'session_expired') return;
     toast('⚠️ Este grupo ya lo está contando: ' + (lockRes.colaborador || 'otro usuario'));
-    await loadHomeData(); 
+    await loadHomeData();
     renderHome();
     return;
   }
-  
+
   currentGroup = group;
   counts = {};
   resetUnsavedChanges();
+  _lastSaveTime = null;
+  setAutosaveStatus('idle');
   document.getElementById('count-group-name').textContent = group.nombre;
   document.getElementById('count-body').innerHTML = '<div style="text-align:center;padding:40px;">Cargando insumos...</div>';
 
   const [insRes, borrRes] = await Promise.all([
-    api('getInsumos', { group_id: group.id }),
+    api('getInsumos',  { group_id: group.id }),
     api('getBorrador', { group_id: group.id, colaborador: currentUser.nombre, turno: fechaTurno() })
   ]);
 
@@ -1082,12 +1157,12 @@ async function startCounting(group) {
   // Si hay borrador del mismo turno, ofrecer reanudar
   if (borrRes.ok && borrRes.borrador) {
     _borradorPendiente = borrRes.borrador;
-    const ts = borrRes.borrador.timestamp || '';
+    // Mostrar solo el nombre del grupo, sin timestamp
     document.getElementById('modal-borrador-sub').textContent =
-      `Tienes un conteo pausado de ${group.nombre}${ts ? ' · guardado ' + ts : ''}. ¿Deseas continuar donde lo dejaste?`;
+      `Tienes un conteo pausado de "${group.nombre}". ¿Deseas continuar donde lo dejaste?`;
     document.getElementById('modal-borrador').classList.add('active');
     show('count');
-    return; // espera decisión del usuario
+    return;
   }
 
   renderCountItems();
@@ -1100,25 +1175,23 @@ function renderCountItems() {
   updateProgress(items);
   const body = document.getElementById('count-body');
   body.innerHTML = '';
-  
+
   items.forEach(item => {
-    if (!counts[item.id]) {
-      counts[item.id] = { area1: 0, area2: 0, total: 0 };
-    }
-    
+    if (!counts[item.id]) counts[item.id] = { area1: 0, area2: 0, total: 0 };
+
     const valArea1 = counts[item.id].area1 !== undefined && counts[item.id].area1 !== 0 ? formatDecimal(counts[item.id].area1) : '';
     const valArea2 = counts[item.id].area2 !== undefined && counts[item.id].area2 !== 0 ? formatDecimal(counts[item.id].area2) : '';
-    const total = (parseDecimal(counts[item.id].area1) + parseDecimal(counts[item.id].area2));
+    const total = parseDecimal(counts[item.id].area1) + parseDecimal(counts[item.id].area2);
     counts[item.id].total = total;
-    
+
     const card = document.createElement('div');
     card.className = 'item-card';
     card.id = 'icard-' + item.id;
-    
+
     const imgContent = item.imagen_url
-      ? `<img src="${item.imagen_url}" />`
+      ? `<img src="${item.imagen_url}" loading="lazy" />`
       : `<span class="item-fallback">📦</span>`;
-    
+
     card.innerHTML = `
       <div class="item-top">
         <div class="item-image">${imgContent}<button class="btn-info" onclick="showInfo(${item.id})">?</button></div>
@@ -1150,7 +1223,7 @@ function renderCountItems() {
     `;
     body.appendChild(card);
   });
-  
+
   const saveButtonContainer = document.createElement('div');
   saveButtonContainer.style.cssText = 'padding: 20px 12px; margin-top: 10px;';
   saveButtonContainer.innerHTML = `
@@ -1164,22 +1237,15 @@ function renderCountItems() {
 function updateCount(id, area) {
   const inp = document.getElementById(`cinp-${id}-${area}`);
   if (!inp) return;
-  
   const val = parseDecimal(inp.value);
-  
-  if (!counts[id]) {
-    counts[id] = { area1: 0, area2: 0, total: 0 };
-  }
-  
-  counts[id][area] = val;
-  counts[id].total = parseDecimal(counts[id].area1) + parseDecimal(counts[id].area2);
-  
+  if (!counts[id]) counts[id] = { area1: 0, area2: 0, total: 0 };
+  counts[id][area]  = val;
+  counts[id].total  = parseDecimal(counts[id].area1) + parseDecimal(counts[id].area2);
   const totalSpan = document.querySelector(`#icard-${id} .total-value`);
   if (totalSpan) {
     const item = (localItems[currentGroup.id] || []).find(x => String(x.id) === String(id));
     totalSpan.textContent = `${formatDecimal(counts[id].total)} ${item ? item.unidad : ''}`;
   }
-  
   hasUnsavedChanges = true;
   updateProgress(localItems[currentGroup.id] || []);
 }
@@ -1187,24 +1253,18 @@ function updateCount(id, area) {
 function stepCount(id, area, delta) {
   const inp = document.getElementById(`cinp-${id}-${area}`);
   if (!inp) return;
-  
   const current = parseDecimal(inp.value);
-  const next = Math.max(0, current + delta);
+  const next    = Math.max(0, current + delta);
   const rounded = Math.round(next * 100) / 100;
   inp.value = formatDecimal(rounded);
-  
-  if (!counts[id]) {
-    counts[id] = { area1: 0, area2: 0, total: 0 };
-  }
-  counts[id][area] = rounded;
-  counts[id].total = parseDecimal(counts[id].area1) + parseDecimal(counts[id].area2);
-  
+  if (!counts[id]) counts[id] = { area1: 0, area2: 0, total: 0 };
+  counts[id][area]  = rounded;
+  counts[id].total  = parseDecimal(counts[id].area1) + parseDecimal(counts[id].area2);
   const totalSpan = document.querySelector(`#icard-${id} .total-value`);
   if (totalSpan) {
     const item = (localItems[currentGroup.id] || []).find(x => String(x.id) === String(id));
     totalSpan.textContent = `${formatDecimal(counts[id].total)} ${item ? item.unidad : ''}`;
   }
-  
   hasUnsavedChanges = true;
   updateProgress(localItems[currentGroup.id] || []);
 }
@@ -1229,27 +1289,18 @@ function goBack() {
     executeGoBack();
   }
 }
-
-function hideConfirmModal() {
-  document.getElementById('modal-confirm').classList.remove('active');
-}
-
-function confirmGoBack() {
-  hideConfirmModal();
-  executeGoBack();
-}
+function hideConfirmModal() { document.getElementById('modal-confirm').classList.remove('active'); }
+function confirmGoBack() { hideConfirmModal(); executeGoBack(); }
 
 async function executeGoBack() {
   if (currentGroup) {
-    // Guardar borrador antes de salir si hay cambios
-    if (hasUnsavedChanges) {
-      await guardarBorrador(false);
-    }
+    if (hasUnsavedChanges) await guardarBorrador(false);
     await api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
   }
   stopAutoSave();
-  currentGroup = null;
-  counts = {};
+  currentGroup  = null;
+  counts        = {};
+  _lastSaveTime = null;
   resetUnsavedChanges();
   await loadHomeData();
   renderHome();
@@ -1269,7 +1320,6 @@ function renderSummaryScreen() {
 
   const table = document.getElementById('summary-table');
   table.innerHTML = '';
-
   items.forEach(item => {
     const area1 = parseDecimal(counts[item.id]?.area1);
     const area2 = parseDecimal(counts[item.id]?.area2);
@@ -1284,30 +1334,24 @@ function renderSummaryScreen() {
     `;
     table.appendChild(row);
   });
-
   show('summary');
 }
 
 function goToSummary() {
   const items = localItems[currentGroup.id] || [];
-
-  // Detectar insumos con cantidad cero en ambas áreas
   const ceros = items.filter(item => {
     const a1 = parseDecimal(counts[item.id]?.area1);
     const a2 = parseDecimal(counts[item.id]?.area2);
     return a1 === 0 && a2 === 0;
   });
-
   if (ceros.length > 0) {
-    // Mostrar modal de confirmación de ceros
     const lista = document.getElementById('modal-ceros-lista');
     lista.innerHTML = ceros.map(item =>
       `<div style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;color:var(--red);">📦 ${item.nombre}</div>`
     ).join('');
     document.getElementById('modal-ceros').classList.add('active');
-    return; // espera confirmación
+    return;
   }
-
   renderSummaryScreen();
 }
 
@@ -1316,51 +1360,41 @@ function confirmarCeros() {
   renderSummaryScreen();
 }
 
-function goBackToEdit() {
-  show('count');
-  renderCountItems();
-}
+function goBackToEdit() { show('count'); renderCountItems(); }
 
 async function submitCount() {
   setLoading('btn-guardar', true, 'Confirmar y Guardar');
   const items = localItems[currentGroup.id] || [];
   const itemsConteo = items.map(item => ({
-    nombre: item.nombre,
-    unidad: item.unidad,
-    cantidad: parseDecimal(counts[item.id]?.total) || 0,
-    area1: parseDecimal(counts[item.id]?.area1) || 0,
-    area2: parseDecimal(counts[item.id]?.area2) || 0
+    nombre:   item.nombre,
+    unidad:   item.unidad,
+    cantidad: parseDecimal(counts[item.id]?.total)  || 0,
+    area1:    parseDecimal(counts[item.id]?.area1)  || 0,
+    area2:    parseDecimal(counts[item.id]?.area2)  || 0
   }));
-  
   const payload = {
-    group_id: currentGroup.id,
+    group_id:    currentGroup.id,
     group_nombre: currentGroup.nombre,
-    sucursal: currentUser.sucursal,
+    sucursal:    currentUser.sucursal,
     colaborador: currentUser.nombre,
-    area: currentUser.area,
-    items: itemsConteo
+    area:        currentUser.area,
+    items:       itemsConteo
   };
-  
   try {
     const res = await api('saveConteo', payload);
-    console.log('📥 Respuesta saveConteo:', res);
-    
     if (res.ok) {
       await api('cancelConteo', { group_id: currentGroup.id, colaborador: currentUser.nombre });
       await limpiarBorrador(currentGroup.id);
       stopAutoSave();
-      
       if (!window._doneIds) window._doneIds = new Set();
       window._doneIds.add(String(currentGroup.id));
-      
       resetUnsavedChanges();
       show('success');
-    } else { 
-      toast('❌ Error: '+ (res.error || 'No se pudo guardar')); 
+    } else {
+      toast('❌ Error: ' + (res.error || 'No se pudo guardar'));
     }
-  } catch(e) { 
-    console.error('Error en submitCount:', e);
-    toast('❌ Error de conexión.'); 
+  } catch(e) {
+    toast('❌ Error de conexión.');
   }
   setLoading('btn-guardar', false, 'Confirmar y Guardar');
 }
@@ -1369,12 +1403,12 @@ async function submitCount() {
 function showInfo(id) {
   const item = (localItems[currentGroup.id] || []).find(i => String(i.id) === String(id));
   if (!item) return;
-  document.getElementById('info-item-name').textContent = item.nombre;
-  document.getElementById('info-ubicacion').textContent = item.ubicacion || '—';
+  document.getElementById('info-item-name').textContent    = item.nombre;
+  document.getElementById('info-ubicacion').textContent    = item.ubicacion || '—';
   document.getElementById('info-instrucciones').textContent = item.instrucciones || '—';
   document.getElementById('info-overlay').classList.add('open');
 }
-function closeOverlay(id, e) { if(e.target === document.getElementById(id)) document.getElementById(id).classList.remove('open'); }
+function closeOverlay(id, e) { if (e.target === document.getElementById(id)) document.getElementById(id).classList.remove('open'); }
 function closeOverlayBtn(id) { document.getElementById(id).classList.remove('open'); }
 
 // ── ADMIN DATA ─────────────────────────────────────
@@ -1384,7 +1418,7 @@ let recFilter = 'Todas';
 async function loadAdminData() {
   const [uRes, gRes] = await Promise.all([
     api('getUsuarios'),
-    api('getGrupos',{})
+    api('getGrupos', {})
   ]);
   adminData.usuarios = uRes.ok ? uRes.usuarios : [];
   adminData.grupos   = gRes.ok ? gRes.grupos   : [];
@@ -1393,11 +1427,11 @@ async function loadAdminData() {
 
 function switchTab(tab) {
   const tabs = ['usuarios','grupos','insumos','registros'];
-  document.querySelectorAll('.admin-tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
+  document.querySelectorAll('.admin-tab').forEach((t,i)=>t.classList.toggle('active', tabs[i]===tab));
   document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
-  if (tab==='registros') loadAndRenderRecords();
-  if (tab==='insumos') loadInsumosList();
+  if (tab === 'registros') loadAndRenderRecords();
+  if (tab === 'insumos')   loadInsumosList();
 }
 
 // USUARIOS
@@ -1408,31 +1442,21 @@ async function adminAddUsuario() {
   const username = document.getElementById('nu-user').value.trim();
   const password = document.getElementById('nu-pass').value.trim();
   if (!nombre||!sucursal||!area||!username||!password) { toast('Llena todos los campos'); return; }
-  
   const btn = document.querySelector('#panel-usuarios .btn-add');
-  btn.disabled = true;
-  btn.textContent = 'Guardando...';
-  
-  const res = await api('addUsuario',{nombre,sucursal,area,username,password});
-  if (!res.ok) { 
-    toast(res.error||'Error'); 
-    btn.disabled = false;
-    btn.textContent = '+ Agregar colaborador';
-    return; 
-  }
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const res = await api('addUsuario', {nombre,sucursal,area,username,password});
+  if (!res.ok) { toast(res.error||'Error'); btn.disabled=false; btn.textContent='+ Agregar colaborador'; return; }
   adminData.usuarios.push({id:res.id,nombre,sucursal,area,username});
   ['nu-nombre','nu-user','nu-pass'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('nu-sucursal').value='';
   document.getElementById('nu-area').value='';
-  renderUsersList(); 
+  renderUsersList();
   toast('✅ Colaborador agregado');
-  
-  btn.disabled = false;
-  btn.textContent = '+ Agregar colaborador';
+  btn.disabled=false; btn.textContent='+ Agregar colaborador';
 }
 
 async function adminDelUsuario(id) {
-  await api('delUsuario',{id});
+  await api('delUsuario', {id});
   adminData.usuarios = adminData.usuarios.filter(u=>String(u.id)!==String(id));
   renderUsersList();
   toast('✅ Usuario eliminado');
@@ -1457,52 +1481,33 @@ function renderUsersList() {
 }
 
 // GRUPOS
-const AREA_LABELS = {
-  cocina: '🔵 Cocina',
-  barra: '🟣 Barra',
-  caja: '🟠 Caja',
-  administracion: '🟢 Administración'
-};
+const AREA_LABELS = { cocina:'🔵 Cocina', barra:'🟣 Barra', caja:'🟠 Caja', administracion:'🟢 Administración' };
 const DIAS_LABELS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
-// Mostrar/ocultar selector de días cuando se elige área
 document.addEventListener('change', e => {
-  if (e.target && e.target.id === 'ng-area') {
+  if (e.target && e.target.id === 'ng-area')
     document.getElementById('ng-dias-wrap').style.display = e.target.value ? 'block' : 'none';
-  }
 });
 
 function getDiasSeleccionados() {
-  return Array.from(document.querySelectorAll('.ng-dia:checked')).map(c => c.value).join(',');
+  return Array.from(document.querySelectorAll('.ng-dia:checked')).map(c=>c.value).join(',');
 }
-
 function setDiasCheckboxes(diasStr) {
   const vals = diasStr ? diasStr.split(',') : [];
-  document.querySelectorAll('.ng-dia').forEach(c => {
-    c.checked = vals.includes(c.value);
-  });
+  document.querySelectorAll('.ng-dia').forEach(c=>{ c.checked = vals.includes(c.value); });
 }
 
 async function adminAddGrupo() {
   const nombre   = document.getElementById('ng-nombre').value.trim();
   const sucursal = document.getElementById('ng-sucursal').value;
   if (!nombre||!sucursal) { toast('Llena nombre y sucursal'); return; }
-
   const area_color  = document.getElementById('ng-area').value || '';
   const dias_activo = area_color ? getDiasSeleccionados() : '';
-
   const btn = document.querySelector('#panel-grupos .btn-add');
-  btn.disabled = true;
-  btn.textContent = 'Guardando...';
-
-  const res = await api('addGrupo',{nombre, sucursal, imagen_url: pendingImgs.group||'', area_color, dias_activo});
-  if (!res.ok) {
-    toast(res.error||'Error');
-    btn.disabled = false;
-    btn.textContent = '+ Agregar grupo';
-    return;
-  }
-  adminData.grupos.push({id:res.id, nombre, sucursal, imagen_url:pendingImgs.group||'', area_color, dias_activo});
+  btn.disabled=true; btn.textContent='Guardando...';
+  const res = await api('addGrupo', {nombre,sucursal,imagen_url:pendingImgs.group||'',area_color,dias_activo});
+  if (!res.ok) { toast(res.error||'Error'); btn.disabled=false; btn.textContent='+ Agregar grupo'; return; }
+  adminData.grupos.push({id:res.id,nombre,sucursal,imagen_url:pendingImgs.group||'',area_color,dias_activo});
   document.getElementById('ng-nombre').value='';
   document.getElementById('ng-sucursal').value='';
   document.getElementById('ng-area').value='';
@@ -1511,69 +1516,52 @@ async function adminAddGrupo() {
   resetUpload('group');
   renderGroupsList();
   toast('✅ Grupo agregado');
-
-  btn.disabled = false;
-  btn.textContent = '+ Agregar grupo';
+  btn.disabled=false; btn.textContent='+ Agregar grupo';
 }
 
 async function adminDelGrupo(id) {
-  await api('delGrupo',{id});
+  await api('delGrupo', {id});
   adminData.grupos = adminData.grupos.filter(g=>String(g.id)!==String(id));
   renderGroupsList(); renderItemsList();
   toast('✅ Grupo eliminado');
 }
 
-// Modal de edición de grupo
 let editingGroupId = null;
-
 function openEditGrupo(id) {
-  const g = adminData.grupos.find(x => String(x.id) === String(id));
+  const g = adminData.grupos.find(x=>String(x.id)===String(id));
   if (!g) return;
   editingGroupId = id;
-  document.getElementById('eg-nombre').textContent  = g.nombre;
-  document.getElementById('eg-area').value          = g.area_color || '';
+  document.getElementById('eg-nombre').textContent = g.nombre;
+  document.getElementById('eg-area').value = g.area_color || '';
   document.getElementById('eg-dias-wrap').style.display = g.area_color ? 'block' : 'none';
   setDiasCheckboxesEdit(g.dias_activo || '');
   document.getElementById('modal-edit-grupo').classList.add('active');
 }
-
 function closeEditGrupo() {
   document.getElementById('modal-edit-grupo').classList.remove('active');
   editingGroupId = null;
 }
-
 function setDiasCheckboxesEdit(diasStr) {
   const vals = diasStr ? diasStr.split(',') : [];
-  document.querySelectorAll('.eg-dia').forEach(c => {
-    c.checked = vals.includes(c.value);
-  });
+  document.querySelectorAll('.eg-dia').forEach(c=>{ c.checked = vals.includes(c.value); });
 }
-
 document.addEventListener('change', e => {
-  if (e.target && e.target.id === 'eg-area') {
+  if (e.target && e.target.id === 'eg-area')
     document.getElementById('eg-dias-wrap').style.display = e.target.value ? 'block' : 'none';
-  }
 });
-
 async function saveEditGrupo() {
   if (!editingGroupId) return;
   const area_color  = document.getElementById('eg-area').value || '';
   const dias_activo = area_color
     ? Array.from(document.querySelectorAll('.eg-dia:checked')).map(c=>c.value).join(',')
     : '';
-
   const btn = document.getElementById('btn-save-edit-grupo');
-  btn.disabled = true; btn.textContent = 'Guardando...';
-
-  const res = await api('updateGrupo', { id: editingGroupId, area_color, dias_activo });
-  btn.disabled = false; btn.textContent = 'Guardar';
-
+  btn.disabled=true; btn.textContent='Guardando...';
+  const res = await api('updateGrupo', {id:editingGroupId,area_color,dias_activo});
+  btn.disabled=false; btn.textContent='Guardar';
   if (!res.ok) { toast('❌ Error al guardar'); return; }
-
-  // Actualizar local
-  const g = adminData.grupos.find(x => String(x.id) === String(editingGroupId));
-  if (g) { g.area_color = area_color; g.dias_activo = dias_activo; }
-
+  const g = adminData.grupos.find(x=>String(x.id)===String(editingGroupId));
+  if (g) { g.area_color=area_color; g.dias_activo=dias_activo; }
   closeEditGrupo();
   renderGroupsList();
   toast('✅ Grupo actualizado');
@@ -1616,78 +1604,47 @@ function filterGroupsForInsumo() {
 }
 
 async function adminAddInsumo() {
-  const group_id = document.getElementById('ni-grupo').value;
-  const nombre = document.getElementById('ni-nombre').value.trim();
-  const unidad = document.getElementById('ni-unidad').value.trim();
-  const ubicacion = document.getElementById('ni-ubicacion').value.trim();
+  const group_id      = document.getElementById('ni-grupo').value;
+  const nombre        = document.getElementById('ni-nombre').value.trim();
+  const unidad        = document.getElementById('ni-unidad').value.trim();
+  const ubicacion     = document.getElementById('ni-ubicacion').value.trim();
   const instrucciones = document.getElementById('ni-instrucciones').value.trim();
-  
-  if (!group_id || !nombre || !unidad) { 
-    toast('❌ Llena todos los campos obligatorios (*)'); 
-    return; 
-  }
-  
+  if (!group_id||!nombre||!unidad) { toast('❌ Llena todos los campos obligatorios (*)'); return; }
   const btn = document.querySelector('#panel-insumos .btn-add');
   const originalText = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Guardando...';
-  
+  btn.disabled=true; btn.textContent='Guardando...';
   try {
     toast('⏳ Procesando imagen, por favor espera...');
-    
-    const res = await api('addInsumo', {
-      group_id,
-      nombre,
-      unidad,
-      ubicacion: ubicacion || '',
-      instrucciones: instrucciones || '',
-      imagen_url: pendingImgs.item || ''
-    });
-    
-    if (!res.ok) {
-      toast('❌ Error: ' + (res.error || 'No se pudo guardar'));
-      console.error('Error respuesta:', res);
-      return;
-    }
-    
+    const res = await api('addInsumo', {group_id,nombre,unidad,ubicacion:ubicacion||'',instrucciones:instrucciones||'',imagen_url:pendingImgs.item||''});
+    if (!res.ok) { toast('❌ Error: '+(res.error||'No se pudo guardar')); return; }
     toast('✅ Insumo agregado correctamente');
-    
-    document.getElementById('ni-nombre').value = '';
-    document.getElementById('ni-unidad').value = '';
-    document.getElementById('ni-ubicacion').value = '';
-    document.getElementById('ni-instrucciones').value = '';
-    document.getElementById('ni-grupo').value = '';
-    document.getElementById('ni-sucursal').value = '';
+    document.getElementById('ni-nombre').value='';
+    document.getElementById('ni-unidad').value='';
+    document.getElementById('ni-ubicacion').value='';
+    document.getElementById('ni-instrucciones').value='';
+    document.getElementById('ni-grupo').value='';
+    document.getElementById('ni-sucursal').value='';
     resetUpload('item');
-    
     await loadInsumosList();
-    
-  } catch (error) {
-    console.error('Error al guardar insumo:', error);
-    toast('❌ Error de conexión al guardar. Revisa tu conexión a internet.');
+  } catch(error) {
+    toast('❌ Error de conexión al guardar.');
   } finally {
-    btn.disabled = false;
-    btn.textContent = originalText;
+    btn.disabled=false; btn.textContent=originalText;
   }
 }
 
 async function loadInsumosList() {
   const res = await api('getInsumos', {});
   adminData.insumos = res.ok ? res.insumos : [];
-  
-  adminData.insumos.forEach(i => {
-    const g = adminData.grupos.find(x => String(x.id) === String(i.group_id));
-    if (g) {
-      i.groupNombre = g.nombre;
-      i.groupSucursal = g.sucursal;
-    }
+  adminData.insumos.forEach(i=>{
+    const g = adminData.grupos.find(x=>String(x.id)===String(i.group_id));
+    if (g) { i.groupNombre=g.nombre; i.groupSucursal=g.sucursal; }
   });
-  
   renderItemsList();
 }
 
 async function adminDelInsumo(id) {
-  await api('delInsumo',{id});
+  await api('delInsumo', {id});
   adminData.insumos = (adminData.insumos||[]).filter(i=>String(i.id)!==String(id));
   renderItemsList();
   toast('✅ Insumo eliminado');
@@ -1695,46 +1652,34 @@ async function adminDelInsumo(id) {
 
 function renderItemsList() {
   const list = document.getElementById('items-list');
-  list.innerHTML = '';
-  
-  if (!adminData.insumos || adminData.insumos.length === 0) {
-    list.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">No hay insumos aún.</div>';
-    return;
+  list.innerHTML='';
+  if (!adminData.insumos||adminData.insumos.length===0) {
+    list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">No hay insumos aún.</div>'; return;
   }
-  
-  const porSucursal = {};
-  adminData.insumos.forEach(item => {
-    const suc = item.groupSucursal || 'Sin sucursal';
-    if (!porSucursal[suc]) porSucursal[suc] = {};
-    const grupo = item.groupNombre || 'Sin grupo';
-    if (!porSucursal[suc][grupo]) porSucursal[suc][grupo] = [];
+  const porSucursal={};
+  adminData.insumos.forEach(item=>{
+    const suc=item.groupSucursal||'Sin sucursal';
+    if (!porSucursal[suc]) porSucursal[suc]={};
+    const grupo=item.groupNombre||'Sin grupo';
+    if (!porSucursal[suc][grupo]) porSucursal[suc][grupo]=[];
     porSucursal[suc][grupo].push(item);
   });
-  
-  Object.keys(porSucursal).sort().forEach(suc => {
-    const sucHeader = document.createElement('div');
-    sucHeader.className = 'a-title';
-    sucHeader.style.color = 'var(--accent)';
-    sucHeader.textContent = `Sucursal ${suc}`;
-    list.appendChild(sucHeader);
-    
-    Object.keys(porSucursal[suc]).sort().forEach(grupo => {
-      const grupoHeader = document.createElement('div');
-      grupoHeader.className = 'a-title';
-      grupoHeader.style.cssText = 'font-size:11px;color:var(--text-muted);margin-bottom:5px;font-weight:500;';
-      grupoHeader.textContent = grupo;
-      list.appendChild(grupoHeader);
-      
-      porSucursal[suc][grupo].forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'a-card';
-        const thumb = item.imagen_url
-          ? `<img src="${item.imagen_url}" style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;" />`
-          : `<div style="width:30px;height:30px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">📦</div>`;
-        card.innerHTML = `${thumb}
+  Object.keys(porSucursal).sort().forEach(suc=>{
+    const sucHeader=document.createElement('div'); sucHeader.className='a-title';
+    sucHeader.style.color='var(--accent)'; sucHeader.textContent=`Sucursal ${suc}`; list.appendChild(sucHeader);
+    Object.keys(porSucursal[suc]).sort().forEach(grupo=>{
+      const grupoHeader=document.createElement('div'); grupoHeader.className='a-title';
+      grupoHeader.style.cssText='font-size:11px;color:var(--text-muted);margin-bottom:5px;font-weight:500;';
+      grupoHeader.textContent=grupo; list.appendChild(grupoHeader);
+      porSucursal[suc][grupo].forEach(item=>{
+        const card=document.createElement('div'); card.className='a-card';
+        const thumb=item.imagen_url
+          ?`<img src="${item.imagen_url}" style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;" />`
+          :`<div style="width:30px;height:30px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">📦</div>`;
+        card.innerHTML=`${thumb}
           <div class="a-card-info">
             <div class="a-card-name">${item.nombre}</div>
-            <div class="a-card-sub">${item.unidad} · ${item.ubicacion || 'Sin ubicación'}</div>
+            <div class="a-card-sub">${item.unidad} · ${item.ubicacion||'Sin ubicación'}</div>
           </div>
           <button class="btn-del" onclick="adminDelInsumo('${item.id}')">Eliminar</button>`;
         list.appendChild(card);
@@ -1747,12 +1692,12 @@ function renderItemsList() {
 async function loadAndRenderRecords() {
   const list = document.getElementById('records-list');
   list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">Cargando registros...</div>';
-  const res = await api('getRegistros', { sucursal: recFilter==='Todas'?'':recFilter });
+  const res = await api('getRegistros', {sucursal:recFilter==='Todas'?'':recFilter});
   const registros = res.ok ? res.registros : [];
   list.innerHTML='';
   if (!registros.length) { list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">No hay registros aún.</div>'; return; }
   registros.forEach(r=>{
-    const items = Array.isArray(r.items)?r.items:[];
+    const items=Array.isArray(r.items)?r.items:[];
     const card=document.createElement('div'); card.className='rec-card';
     card.innerHTML=`
       <div class="rec-top">
@@ -1797,33 +1742,20 @@ document.addEventListener('keydown', e=>{
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then(reg => {
-
-    // Detectar cuando hay un nuevo SW esperando (versión actualizada)
     reg.addEventListener('updatefound', () => {
       const newWorker = reg.installing;
       if (!newWorker) return;
-
       newWorker.addEventListener('statechange', () => {
-        // Nuevo SW instalado y listo, pero hay un SW viejo activo
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          // Activar inmediatamente sin esperar que el usuario cierre la app
           newWorker.postMessage({ type: 'SKIP_WAITING' });
         }
       });
     });
-
-    // Cuando el SW activo cambia (se activó el nuevo), recargar la página
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload();
-      }
+      if (!refreshing) { refreshing = true; window.location.reload(); }
     });
-
-    // Verificar si ya hay una actualización disponible al cargar
     reg.update().catch(() => {});
-
   }).catch(() => {});
 }
 </script>
