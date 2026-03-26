@@ -602,7 +602,17 @@ function turnoActual() {
   const hora = new Date().getHours();
   return hora >= 15 ? 'CIERRE' : 'APERTURA';
 }
-function fechaTurno() { return todayISO() + '_' + turnoActual(); }
+function fechaTurno() {
+  const now = new Date();
+  const hora = now.getHours();
+  const fechaBase = new Date(now);
+  // Madrugada 00:00–02:59 pertenece al día anterior (turno cierre)
+  if (hora < 3) fechaBase.setDate(fechaBase.getDate() - 1);
+  const yyyy = fechaBase.getFullYear();
+  const mm   = String(fechaBase.getMonth() + 1).padStart(2, '0');
+  const dd   = String(fechaBase.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}_${turnoActual()}`;
+}
 function turnoLabel() {
   return turnoActual() === 'APERTURA'
     ? '🌅 Turno Apertura  ·  08:00 – 14:59'
@@ -828,6 +838,14 @@ async function doLogin() {
       if (currentUser.role === 'admin') {
         await loadAdminData();
         show('admin');
+      } else if (currentUser.role === 'auditor') {
+        await loadAdminData();
+        show('admin');
+        switchTab('registros');
+        // Ocultar todas las pestañas excepto Registros
+        document.querySelectorAll('.admin-tab').forEach(tab => {
+          if (!tab.textContent.includes('Registros')) tab.style.display = 'none';
+        });
       } else {
         await loadHomeData();
         renderHome();
@@ -1007,12 +1025,15 @@ function renderHome() {
 
   localGroups.forEach(g => {
     const groupId = String(g.id);
-    const done    = window._doneIds.has(groupId);
+    const done        = window._doneIds.has(groupId);
     const enProcesoUser = window._enProceso && window._enProceso[groupId];
-    const esMio   = enProcesoUser === currentUser.nombre;
-    const bloqueado = !done && enProcesoUser && !esMio;
+    const esMio       = enProcesoUser === currentUser.nombre;
+    // done tiene prioridad máxima — nunca lo sobreescribe enProceso
+    const bloqueado   = !done && enProcesoUser && !esMio;
 
-    let estado = done ? 'done' : (bloqueado ? 'en-proceso' : 'available');
+    let estado = 'available';
+    if (done)      estado = 'done';
+    else if (bloqueado) estado = 'en-proceso';
 
     const card = document.createElement('div');
     card.className = 'group-card ' + estado;
@@ -1119,7 +1140,7 @@ async function checkTodayStatus() {
 // ── COUNTING ──────────────────────────────────────
 async function startCounting(group) {
   if (window._doneIds.has(String(group.id))) {
-    toast('❌ Este grupo ya tiene un inventario registrado en este turno');
+    toast('❌ Este grupo ya fue terminado en este turno');
     return;
   }
 
@@ -1128,7 +1149,8 @@ async function startCounting(group) {
   const lockRes = await api('startConteo', {
     group_id:    group.id,
     sucursal:    currentUser.sucursal,
-    colaborador: currentUser.nombre
+    colaborador: currentUser.nombre,
+    fecha_turno: fechaTurno()
   });
 
   if (!lockRes.ok) {
@@ -1373,12 +1395,13 @@ async function submitCount() {
     area2:    parseDecimal(counts[item.id]?.area2)  || 0
   }));
   const payload = {
-    group_id:    currentGroup.id,
+    group_id:     currentGroup.id,
     group_nombre: currentGroup.nombre,
-    sucursal:    currentUser.sucursal,
-    colaborador: currentUser.nombre,
-    area:        currentUser.area,
-    items:       itemsConteo
+    sucursal:     currentUser.sucursal,
+    colaborador:  currentUser.nombre,
+    area:         currentUser.area,
+    fecha_turno:  fechaTurno(),
+    items:        itemsConteo
   };
   try {
     const res = await api('saveConteo', payload);
@@ -1436,6 +1459,7 @@ function switchTab(tab) {
 
 // USUARIOS
 async function adminAddUsuario() {
+  if (currentUser.role === 'auditor') return;
   const nombre   = document.getElementById('nu-nombre').value.trim();
   const sucursal = document.getElementById('nu-sucursal').value;
   const area     = document.getElementById('nu-area').value;
@@ -1498,6 +1522,7 @@ function setDiasCheckboxes(diasStr) {
 }
 
 async function adminAddGrupo() {
+  if (currentUser.role === 'auditor') return;
   const nombre   = document.getElementById('ng-nombre').value.trim();
   const sucursal = document.getElementById('ng-sucursal').value;
   if (!nombre||!sucursal) { toast('Llena nombre y sucursal'); return; }
@@ -1604,6 +1629,7 @@ function filterGroupsForInsumo() {
 }
 
 async function adminAddInsumo() {
+  if (currentUser.role === 'auditor') return;
   const group_id      = document.getElementById('ni-grupo').value;
   const nombre        = document.getElementById('ni-nombre').value.trim();
   const unidad        = document.getElementById('ni-unidad').value.trim();
